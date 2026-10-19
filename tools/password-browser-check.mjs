@@ -20,7 +20,9 @@ try{
   ensure(!await page.locator('#auth-remember').isChecked(),'Remember must be opt-in');
   await checkVisibility(page,'auth-login-password');ensure(mail.length===0,'Eye button submitted login form');
   await page.fill('#auth-email','member@example.test');await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
-  await page.fill('#auth-code',mail[0].code);await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-password-form').waitFor({state:'visible'});
+  await page.fill('#auth-code',mail[0].code);await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#session-banner').waitFor({state:'visible'});
+  ensure(!await page.locator('#auth-dialog').evaluate(el=>el.open),'Code login kept dialog open');
+  await page.locator('#account-button').click();await page.locator('#auth-password-form').waitFor({state:'visible'});
   for(const id of ['auth-current-password','auth-new-password','auth-confirm-password'])await checkVisibility(page,id);
   for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
     await page.evaluate(lang=>{const el=document.getElementById('language');el.value=lang;el.dispatchEvent(new Event('change'));},lang);
@@ -31,7 +33,11 @@ try{
   await page.fill('#auth-confirm-password','example test password 123');await page.locator('#auth-password-form button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('saved'));
   await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
   await page.fill('#auth-email','member@example.test');await page.fill('#auth-login-password','wrong password');await page.locator('#auth-password-login').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Incorrect'));
-  await page.locator('#auth-remember').check();await page.fill('#auth-login-password','example test password 123');await page.locator('#auth-login-password').press('Enter');await page.locator('#auth-session').waitFor({state:'visible'});
+  ensure(await page.locator('#auth-dialog').evaluate(el=>el.open),'Failed login closed dialog');ensure(await page.locator('#login-notification').isHidden(),'Failed login showed success');
+  await page.evaluate(()=>{history.replaceState(null,'','#browse');window.scrollTo(0,document.body.scrollHeight);});
+  await page.locator('#auth-remember').check();await page.fill('#auth-login-password','example test password 123');await page.locator('#auth-login-password').press('Enter');await page.locator('#session-banner').waitFor({state:'visible'});
+  ensure(!await page.locator('#auth-dialog').evaluate(el=>el.open),'Password login kept dialog open');await page.locator('#login-notification').waitFor({state:'visible'});ensure((await page.locator('#login-notification-text').textContent()).includes('Signed in'),'Missing success text');ensure(await page.evaluate(()=>scrollY===0&&!location.hash),'Login did not return home');
+  await page.locator('#login-notification-close').click();ensure(await page.locator('#login-notification').isHidden(),'Notification did not close');
   ensure(mail.length===1,'Password login sent an email');await page.close();
   const restored=await context.newPage();await restored.goto(base);await restored.locator('#session-banner').waitFor({state:'visible'});ensure(await restored.locator('#session-email').textContent()==='member@example.test','New tab lost remembered user');
   const another=await context.newPage();await another.goto(base);await another.locator('#session-banner').waitFor({state:'visible'});

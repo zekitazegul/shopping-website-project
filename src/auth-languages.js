@@ -37,3 +37,5 @@ const signInTitles={tr:'Hesabına giriş yap',en:'Sign in to your account',nl:'I
 for(const [lang,title] of Object.entries(signInTitles))authMessages[lang].authTitle=title;
 const visibilityLabels={tr:['Parolayı göster','Parolayı gizle'],en:['Show password','Hide password'],nl:['Wachtwoord tonen','Wachtwoord verbergen'],de:['Passwort anzeigen','Passwort verbergen'],fr:['Afficher le mot de passe','Masquer le mot de passe'],it:['Mostra password','Nascondi password'],es:['Mostrar contraseña','Ocultar contraseña'],pl:['Pokaż hasło','Ukryj hasło'],pt:['Mostrar palavra-passe','Ocultar palavra-passe']};
 for(const [lang,[show,hide]] of Object.entries(visibilityLabels))Object.assign(authMessages[lang],{authShowPassword:show,authHidePassword:hide});
+const loginSuccessLabels={tr:'Giriş yapıldı. Hoş geldin!',en:'Signed in. Welcome!',nl:'Je bent ingelogd. Welkom!',de:'Erfolgreich angemeldet. Willkommen!',fr:'Connexion réussie. Bienvenue !',it:'Accesso effettuato. Benvenuto!',es:'Sesión iniciada. ¡Bienvenido!',pl:'Zalogowano. Witaj!',pt:'Sessão iniciada. Bem-vindo!'};
+for(const [lang,label] of Object.entries(loginSuccessLabels))authMessages[lang].authLoginSuccess=label;

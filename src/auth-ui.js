@@ -17,7 +17,19 @@ export function setupAuth(t) {
   let user=null, email='', codeSent=false, busy=false, message='', adminIntent=false, stats=null;
   let revision=0;
   let retryUntil=0;
+  let notificationTimer;
+  function finishLogin(){
+    $('auth-dialog').close();
+    if(location.hash)history.replaceState(history.state,'',location.pathname+location.search);
+    $('account-button').focus({preventScroll:true});window.scrollTo(0,0);
+    clearTimeout(notificationTimer);$('login-notification-text').textContent=t('authLoginSuccess');$('login-notification').hidden=false;
+    notificationTimer=setTimeout(()=>{$('login-notification').hidden=true;},8000);
+  }
+  $('login-notification-close').onclick=()=>{clearTimeout(notificationTimer);$('login-notification').hidden=true;};
   function render() {
+    $('login-notification-close').setAttribute('aria-label',t('authClose'));
+    if(!user)$('login-notification').hidden=true;
+    if(!$('login-notification').hidden)$('login-notification-text').textContent=t('authLoginSuccess');
     passwordToggles.forEach(toggle=>toggle.update());
     $('account-button').textContent=t(user?'authAccount':'authSignIn');
     $('account-button').dataset.signedIn=String(!!user);
@@ -43,10 +55,11 @@ export function setupAuth(t) {
     for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy || (remaining>0 && button.type==='submit');
     document.dispatchEvent(new CustomEvent('accountchange',{detail:{user}}));
   }
-  async function perform(work) {
+  async function perform(work,{login=false}={}) {
     if(busy)return;revision++;busy=true;message='';render();
-    try{await work();}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied','authPasswordInvalid','authPasswordLength','authPasswordReauth','authPasswordMismatch'].includes(error.message)?error.message:'authInvalid';}
-    finally{busy=false;render();}
+    let completed=false;
+    try{await work();completed=true;}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied','authPasswordInvalid','authPasswordLength','authPasswordReauth','authPasswordMismatch'].includes(error.message)?error.message:'authInvalid';}
+    finally{busy=false;render();if(completed&&login&&user)finishLogin();}
   }
   async function open(admin=false) {
     adminIntent=admin;message='';stats=null;
@@ -71,7 +84,7 @@ export function setupAuth(t) {
     if(!user)throw new Error('authInvalid');
     codeSent=false;$('auth-code').value='';
     if(adminIntent){if(!user.admin)throw new Error('authAdminDenied');stats=await auth.adminStats();}
-  });};
+  },{login:true});};
   $('auth-password-login').onclick=()=>{
     if(!$('auth-email').reportValidity())return;
     if(!$('auth-login-password').value){$('auth-login-password').focus();return;}
@@ -79,7 +92,7 @@ export function setupAuth(t) {
       user=await auth.signInPassword($('auth-email').value.trim(),$('auth-login-password').value,$('auth-remember').checked);
       $('auth-login-password').value='';codeSent=false;
       if(adminIntent){if(!user.admin)throw Error('authAdminDenied');stats=await auth.adminStats();}
-    });
+    },{login:true});
   };
   $('auth-password-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
     if($('auth-new-password').value!==$('auth-confirm-password').value)throw Error('authPasswordMismatch');

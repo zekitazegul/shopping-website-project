@@ -21,7 +21,7 @@ const ensure=(value,message)=>{if(!value)throw Error(message);};
 async function login(email){
   const context=await browser.newContext(),page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();await page.fill('#auth-email',email);await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
-  await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-session').waitFor({state:'visible'});await page.locator('#auth-close').click();return page;
+  await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#session-banner').waitFor({state:'visible'});return page;
 }
 try{
   const buyer=await login('buyer@example.test');await buyer.locator('.detail-link').first().click();await buyer.locator('#contact-seller').click();await buyer.locator('#messages-dialog').waitFor({state:'visible'});
