@@ -3,6 +3,10 @@ export function buildFeedbackMailto(address, subject, body) {
 }
 
 export function setupFeedback() {
+  const dialog = document.getElementById('contact-dialog');
+  document.getElementById('contact-open').addEventListener('click', () => dialog.showModal());
+  document.getElementById('contact-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => document.getElementById('contact-open').focus());
   const form = document.getElementById('feedback-form');
   const email = document.getElementById('feedback-email');
   form.addEventListener('submit', event => {

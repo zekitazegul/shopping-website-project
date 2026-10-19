@@ -55,15 +55,16 @@ export function setupListingUI(t,account,onCatalog){
       if(mode==='admin'&&row.status==='pending'){const approve=make('button',t('listingApprove'),'primary');approve.onclick=()=>action('/admin/listings/'+row.id+'/approve');actions.append(approve);}
       if(mode==='mine'&&['pending','approved'].includes(row.status)){const edit=make('button',t('listingEdit'),'primary');edit.onclick=()=>openEdit(row);actions.append(edit);}
       if(mode==='mine'&&row.status==='approved'){const sold=make('button',t('listingMarkSold'),'text-button');sold.onclick=()=>{if(window.confirm(t('listingConfirmSold')))action('/listings/'+row.id+'/sold');};actions.append(sold);}
+      if(mode==='mine'&&row.status==='sold'){const relist=make('button',t('listingRelist'),'primary');relist.onclick=()=>{if(window.confirm(t('listingConfirmRelist')))action('/listings/'+row.id+'/relist','listingRelisted');};actions.append(relist);}
       if(row.status!=='removed'){const remove=make('button',t('listingRemove'),'text-button');remove.onclick=()=>{if(window.confirm(t('listingConfirmRemove')))action('/listings/'+row.id+'/remove');};actions.append(remove);}
       card.append(actions);$('listing-manager-rows').append(card);
     }
     for(const button of $('listing-manager-rows').querySelectorAll('button'))button.disabled=busy;
   }
   async function loadManager(){managerRows=await api.api(mode==='admin'?'/admin/listings':'/my/listings');drawManager();}
-  async function action(path){
+  async function action(path,success=''){
     if(busy)return;busy=true;drawManager();$('listing-manager-status').textContent=t('listingWorking');
-    try{await api.api(path,{});await loadManager();await refresh();$('listing-manager-status').textContent='';}
+    try{await api.api(path,{});await loadManager();await refresh();$('listing-manager-status').textContent=success?t(success):'';}
     catch(error){$('listing-manager-status').textContent=t(error.message==='authAdminDenied'?'authAdminDenied':'listingActionFailed');}
     finally{busy=false;drawManager();}
   }

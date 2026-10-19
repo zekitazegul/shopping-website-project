@@ -8,6 +8,8 @@ import {resolve} from 'node:path';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {backup} from 'node:sqlite';
+import {randomUUID} from 'node:crypto';
+import {Messaging} from '../server/messaging.mjs';
 
 async function setup(t){
   let mail;const accounts=new Accounts({filename:':memory:',secret:'listing-test-secret-'.repeat(3),adminEmail:'owner@example.test',sendMail:async value=>{mail=value;}});
@@ -20,6 +22,36 @@ async function setup(t){
   }
   return {accounts,listings,tokens,image,form};
 }
+test('only owner can relist sold items, preserving photos and conversations through review',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);const messaging=new Messaging(accounts);
+  const row=await listings.create(tokens.seller,form());listings.approve(tokens.owner,row.id);
+  const thread=messaging.start(tokens.other,{listingId:row.id,text:'Is this available?',clientId:randomUUID()});
+  listings.sold(tokens.seller,row.id);
+  assert.throws(()=>listings.relist(null,row.id),/authInvalid/);
+  for(const token of [tokens.other,tokens.owner])assert.throws(()=>listings.relist(token,row.id),/listingActionFailed/);
+  assert.equal(listings.mine(tokens.seller)[0].status,'sold');
+  listings.relist(tokens.seller,row.id);
+  const pending=listings.mine(tokens.seller)[0];assert.equal(pending.id,row.id);assert.equal(pending.status,'pending');assert.deepEqual(pending.photos,row.photos);assert.equal(listings.publicList().length,0);
+  assert.throws(()=>listings.photo(row.photos[0]),/authInvalid/);
+  assert.equal(messaging.read(tokens.other,thread.id).messages[0].text,'Is this available?');
+  assert.throws(()=>messaging.send(tokens.other,thread.id,{text:'Available now?',clientId:randomUUID()}),/messageClosed/);
+  assert.throws(()=>listings.relist(tokens.seller,row.id),/listingActionFailed/);
+  listings.approve(tokens.owner,row.id);assert.equal(listings.publicList()[0].id,row.id);assert.ok(listings.photo(row.photos[0]).length);
+  messaging.send(tokens.seller,thread.id,{text:'Available again',clientId:randomUUID()});assert.equal(messaging.read(tokens.other,thread.id).messages.length,2);
+  assert.throws(()=>listings.relist(tokens.seller,row.id),/listingActionFailed/);
+  listings.sold(tokens.seller,row.id);listings.remove(tokens.seller,row.id);assert.throws(()=>listings.relist(tokens.seller,row.id),/listingActionFailed/);
+});
+test('HTTP relisting requires owner session and cannot bypass administrator review',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);const row=await listings.create(tokens.seller,form());listings.approve(tokens.owner,row.id);listings.sold(tokens.seller,row.id);
+  const server=createApp({accounts,mailReady:true,root:resolve(import.meta.dirname,'..'),origins:['https://zekitazegul.github.io']});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const url='http://127.0.0.1:'+server.address().port+'/api/listings/'+row.id+'/relist';
+  assert.equal((await fetch(url,{method:'POST'})).status,401);
+  assert.equal((await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+tokens.other}})).status,409);
+  assert.equal((await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+tokens.seller,Origin:'https://zekitazegul.github.io'}})).status,403);
+  assert.equal((await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+tokens.seller}})).status,200);
+  assert.equal(listings.publicList().length,0);assert.equal(listings.mine(tokens.seller)[0].status,'pending');
+  assert.equal((await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+tokens.seller}})).status,409);
+});
 test('verified seller can submit; only admin can publish; pending photos are private',async t=>{
   const {listings,tokens,form}=await setup(t);
   await assert.rejects(listings.create(null,form()),/authInvalid/);

@@ -20,7 +20,7 @@ const browser=await browserType.launch({headless:true,...(process.env.PLAYWRIGHT
 const ensure=(value,message)=>{if(!value)throw Error(message);};
 async function login(email){
   const context=await browser.newContext(),page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();await page.fill('#auth-email',email);await page.locator('#auth-email-form button').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
+  await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();await page.fill('#auth-email',email);await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-session').waitFor({state:'visible'});await page.locator('#auth-close').click();return page;
 }
 try{

@@ -15,7 +15,7 @@ const ensure=(value,message)=>{if(!value)throw Error(message);};
 async function login(email){
   const context=await browser.newContext();const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
   await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();
-  await page.fill('#auth-email',email);await page.locator('#auth-email-form button').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
+  await page.fill('#auth-email',email);await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-session').waitFor({state:'visible'});await page.locator('#auth-close').click();return page;
 }
 try{
@@ -49,7 +49,20 @@ try{
   await admin.locator('#listing-moderate').click();await admin.getByRole('button',{name:'Approve',exact:true}).click();await admin.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Published'));await admin.locator('#listing-manager-close').click();
   await seller.locator('#listing-manager-close').click();await seller.locator('#listing-mine').click();await seller.getByRole('button',{name:'Mark as sold',exact:true}).click();await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Sold'));
   ensure(await seller.getByRole('button',{name:'Edit',exact:true}).count()===0,'Sold listing editable');
+  for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
+    await seller.evaluate(lang=>{const select=document.getElementById('language');select.value=lang;select.dispatchEvent(new Event('change'));},lang);
+    for(const [width,height] of [[320,568],[800,360],[768,1024],[1440,900]]){
+      await seller.setViewportSize({width,height});ensure(await seller.locator('#listing-manager').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Relist manager overflow '+lang);
+    }
+  }
+  await seller.evaluate(()=>{const select=document.getElementById('language');select.value='en';select.dispatchEvent(new Event('change'));});
+  await seller.getByRole('button',{name:'Relist',exact:true}).click();await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Awaiting review'));
+  await seller.waitForFunction(()=>document.querySelector('.managed-listing img')?.naturalWidth>0);
+  ensure((await seller.locator('#listing-manager-status').textContent()).includes('resubmitted'),'Relist confirmation missing');
+  await visitor.reload();await visitor.waitForFunction(()=>document.querySelectorAll('.card').length===0);
+  await admin.locator('#listing-moderate').click();await admin.getByRole('button',{name:'Approve',exact:true}).click();await admin.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Published'));await admin.locator('#listing-manager-close').click();
+  await visitor.reload();await visitor.selectOption('#country','BE');await visitor.waitForSelector('.card');ensure(await visitor.locator('.card h3').textContent()==='Updated chair','Relisted item missing');
   await admin.locator('#listing-moderate').click();await admin.locator('.managed-listing .text-button').click();await admin.waitForFunction(()=>document.querySelectorAll('.managed-listing button').length===0);
   await visitor.reload();await visitor.waitForFunction(()=>document.querySelectorAll('.card').length===0);ensure(!errors.length,errors.join('\n'));
-  console.log('PASS '+engine+': real SQLite/HTTP create, photo, pending review, admin approval, owner edit/review with retained photo, sold, removal, public browsing, 36 localized form viewports. No real email sent.');
+  console.log('PASS '+engine+': create, photo, review, owner edit, sold, relist/review with retained photo, removal, public browsing, 72 localized form/manager viewports. No real email sent.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));accounts.close();}

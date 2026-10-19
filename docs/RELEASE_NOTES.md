@@ -86,3 +86,19 @@ Eerste lokale prototype: drie talen, landfilter op artikellocatie, zoeken, categ
 - TR: Kullanıcı kendi ilanını düzenleyebilir; değişiklikler yeniden onaya gider. Fotoğraflar korunabilir veya tümü değiştirilebilir. Satıldı olarak işaretlenen ilan katalogdan kalkar; mesaj geçmişi okunabilir, yeni mesaj gönderilemez.
 - EN: Owners can edit their listings and resubmit them for approval, retaining photos or replacing all photos. Sold listings leave the catalogue; conversation history remains readable and new messages are disabled.
 - NL: Eigenaren kunnen advertenties bewerken en opnieuw ter goedkeuring aanbieden, met behoud of vervanging van alle foto's. Verkochte advertenties verdwijnen uit het aanbod; bestaande berichten blijven leesbaar en nieuwe berichten zijn uitgeschakeld.
+
+## Relisting / Opnieuw aanbieden / Yeniden yayınlama
+
+- TR: Satılmış ilanı yalnızca sahibi “Yeniden yayınla” ile tekrar incelemeye gönderebilir. Fotoğraflar ve mesaj geçmişi korunur. Yönetici onayına kadar ilan katalogda görünmez ve yeni mesaj gönderilemez. Kaldırılmış ilanlar geri getirilemez.
+- EN: Owners can resubmit sold listings for review with “Relist”. Photos and conversation history are preserved. The listing stays out of the catalogue and new messages remain disabled until administrator approval. Removed listings cannot be restored.
+- NL: Eigenaren kunnen verkochte advertenties opnieuw ter beoordeling aanbieden. Foto’s en gespreksgeschiedenis blijven bewaard. Tot goedkeuring blijft de advertentie buiten het aanbod en zijn nieuwe berichten uitgeschakeld. Verwijderde advertenties kunnen niet worden hersteld.
+
+- TR: Geliştiriciye öneri formu, ana sayfada yer kaplamaması için alt kısımdaki “İletişim” bağlantısıyla açılan ayrı pencereye taşındı.
+- EN: The developer feedback form now opens in a separate dialog from the footer’s “Contact” link, keeping the homepage compact.
+- NL: Het feedbackformulier voor de ontwikkelaar opent nu in een apart venster via “Contact” onderaan de pagina, zodat de hoofdpagina compact blijft.
+
+## Passwords and remembered sessions / Wachtwoorden en onthouden sessies / Parola ve hatırlanan oturum
+
+- TR: Doğrulanmış kullanıcılar ve yönetici, Hesabım bölümünden site parolası oluşturabilir. Sonraki girişler e-posta ve parolayla kod istemeden yapılır. Unutulan parola için e-posta koduyla giriş korunur. “Bugün beni hatırla”, aynı tarayıcıda gün sonuna kadar (en fazla 24 saat) oturumu korur; çıkış tüm hatırlanan sekmeleri kapatır. Parola değişikliği mevcut parola veya son 10 dakikadaki kod doğrulaması gerektirir ve diğer oturumları kapatır.
+- EN: Verified members and administrators can create a site password in My account and then sign in with email and password without a new code. Email-code login remains available for recovery. “Remember me today” keeps the session in this browser until local midnight (at most 24 hours); logout clears remembered sessions across tabs. Password changes require the current password or a code verified in the past ten minutes and revoke other sessions.
+- NL: Geverifieerde gebruikers en beheerders kunnen bij Mijn account een wachtwoord instellen en daarna zonder nieuwe code met e-mail en wachtwoord inloggen. E-mailcodes blijven beschikbaar voor herstel. “Onthoud mij vandaag” bewaart de sessie in deze browser tot middernacht (maximaal 24 uur); uitloggen wist de onthouden sessie in alle tabbladen. Wachtwoordwijzigingen vereisen het huidige wachtwoord of een codeverificatie van minder dan tien minuten geleden en beëindigen andere sessies.

@@ -68,6 +68,12 @@ export class Listings {
     if(!result.changes)throw new AuthError(409,'listingActionFailed');
     return {ok:true};
   }
+  relist(token,id){
+    const user=this.accounts.requireVerified(token);
+    const result=this.db.prepare("UPDATE listings SET status='pending',sold_at=NULL WHERE id=? AND owner_id=? AND status='approved' AND sold_at IS NOT NULL").run(id,user.id);
+    if(!result.changes)throw new AuthError(409,'listingActionFailed');
+    return {ok:true};
+  }
   approve(token,id){
     if(!this.accounts.requireVerified(token).admin)throw new AuthError(403,'authAdminDenied');
     const result=this.db.prepare("UPDATE listings SET status='approved' WHERE id=? AND status='pending'").run(id);

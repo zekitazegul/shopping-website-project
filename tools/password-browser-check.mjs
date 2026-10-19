@@ -1,0 +1,34 @@
+import {createRequire} from 'node:module';
+import {resolve} from 'node:path';
+import {Accounts} from '../server/accounts.mjs';
+import {createApp} from '../server/http.mjs';
+const require=createRequire(import.meta.url),engine=process.env.BROWSER_ENGINE||'chromium';
+const type=require(process.env.PLAYWRIGHT_MODULE)[engine];
+const mail=[],accounts=new Accounts({filename:':memory:',secret:'password-browser-test-'.repeat(3),adminEmail:'admin@example.test',sendMail:async value=>mail.push(value)});
+const base='http://127.0.0.1:4193',server=createApp({accounts,mailReady:true,root:resolve(import.meta.dirname,'..'),origins:[base]});
+await new Promise(resolve=>server.listen(4193,'127.0.0.1',resolve));
+const browser=await type.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE}:{})});
+const ensure=(value,message)=>{if(!value)throw Error(message);};
+try{
+  const context=await browser.newContext(),page=await context.newPage(),errors=[];context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();
+  ensure(!await page.locator('#auth-remember').isChecked(),'Remember must be opt-in');
+  await page.fill('#auth-email','member@example.test');await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
+  await page.fill('#auth-code',mail[0].code);await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-password-form').waitFor({state:'visible'});
+  for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
+    await page.evaluate(lang=>{const el=document.getElementById('language');el.value=lang;el.dispatchEvent(new Event('change'));},lang);
+    for(const [width,height]of [[320,568],[800,360],[768,1024],[1440,900]]){await page.setViewportSize({width,height});ensure(await page.locator('#auth-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Password form overflow '+lang);}
+  }
+  await page.evaluate(()=>{const el=document.getElementById('language');el.value='en';el.dispatchEvent(new Event('change'));});
+  await page.fill('#auth-new-password','example test password 123');await page.fill('#auth-confirm-password','example test password 999');await page.locator('#auth-password-form button').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('must match'));
+  await page.fill('#auth-confirm-password','example test password 123');await page.locator('#auth-password-form button').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('saved'));
+  await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
+  await page.fill('#auth-email','member@example.test');await page.fill('#auth-login-password','wrong password');await page.locator('#auth-password-login').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Incorrect'));
+  await page.locator('#auth-remember').check();await page.fill('#auth-login-password','example test password 123');await page.locator('#auth-login-password').press('Enter');await page.locator('#auth-session').waitFor({state:'visible'});
+  ensure(mail.length===1,'Password login sent an email');await page.close();
+  const restored=await context.newPage();await restored.goto(base);await restored.locator('#session-banner').waitFor({state:'visible'});ensure(await restored.locator('#session-email').textContent()==='member@example.test','New tab lost remembered user');
+  const another=await context.newPage();await another.goto(base);await another.locator('#session-banner').waitFor({state:'visible'});
+  await restored.locator('#session-logout').click();await restored.locator('#session-banner').waitFor({state:'hidden'});await another.bringToFront();await another.evaluate(()=>window.dispatchEvent(new Event('focus')));await another.locator('#session-banner').waitFor({state:'hidden'});
+  ensure(await restored.evaluate(()=>localStorage.getItem('shopping.home.auth.remembered'))===null,'Logout kept remembered session');
+  ensure(!errors.length,errors.join(';'));console.log('PASS '+engine+': real OTP, password creation/mismatch, wrong/correct password without new email, remembered new tab after closing old tab, logout across tabs, 36 localized password viewports.');
+}finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));accounts.close();}

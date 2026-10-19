@@ -18,7 +18,11 @@ export function setupAuth(t) {
     $('auth-heading').textContent=t(adminIntent?'authAdminTitle':'authTitle');
     $('auth-email-form').hidden=!!user || !auth.configured || codeSent;
     $('auth-code-form').hidden=!!user || !auth.configured || !codeSent;
+    $('auth-remember-option').hidden=!!user || !auth.configured;
+    $('auth-remember').disabled=busy;
     $('auth-session').hidden=!user;
+    $('auth-password-form').hidden=!user;
+    $('auth-password-title').textContent=t(user?.hasPassword?'authPasswordChange':'authPasswordCreate');
     $('auth-user-email').textContent=user?.email || '';
     $('auth-admin-panel').hidden=!user?.admin || !stats;
     $('auth-total').textContent=String(stats?.accounts ?? '');
@@ -30,7 +34,7 @@ export function setupAuth(t) {
   }
   async function perform(work) {
     if(busy)return;revision++;busy=true;message='';render();
-    try{await work();}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied'].includes(error.message)?error.message:'authInvalid';}
+    try{await work();}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied','authPasswordInvalid','authPasswordLength','authPasswordReauth','authPasswordMismatch'].includes(error.message)?error.message:'authInvalid';}
     finally{busy=false;render();}
   }
   async function open(admin=false) {
@@ -46,17 +50,33 @@ export function setupAuth(t) {
   $('admin-login').onclick=()=>open(true);
   $('session-admin-link').onclick=()=>open(true);
   $('auth-close').onclick=()=>$('auth-dialog').close();
+  $('auth-dialog').addEventListener('close',()=>{$('auth-password-form').reset();$('auth-login-password').value='';});
+  $('auth-login-password').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('auth-password-login').click();}});
   $('auth-email-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
     email=$('auth-email').value.trim();await auth.sendCode(email,document.documentElement.lang);codeSent=true;message='authSent';$('auth-code').value='';
   });};
   $('auth-code-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
-    user=await auth.verifyCode(email,$('auth-code').value.trim());
+    user=await auth.verifyCode(email,$('auth-code').value.trim(),$('auth-remember').checked);
     if(!user)throw new Error('authInvalid');
     codeSent=false;$('auth-code').value='';
     if(adminIntent){if(!user.admin)throw new Error('authAdminDenied');stats=await auth.adminStats();}
   });};
+  $('auth-password-login').onclick=()=>{
+    if(!$('auth-email').reportValidity())return;
+    if(!$('auth-login-password').value){$('auth-login-password').focus();return;}
+    perform(async()=>{
+      user=await auth.signInPassword($('auth-email').value.trim(),$('auth-login-password').value,$('auth-remember').checked);
+      $('auth-login-password').value='';codeSent=false;
+      if(adminIntent){if(!user.admin)throw Error('authAdminDenied');stats=await auth.adminStats();}
+    });
+  };
+  $('auth-password-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
+    if($('auth-new-password').value!==$('auth-confirm-password').value)throw Error('authPasswordMismatch');
+    await auth.setPassword($('auth-new-password').value,$('auth-current-password').value);
+    $('auth-password-form').reset();user=await auth.access();message='authPasswordSaved';
+  });};
   $('auth-change-email').onclick=()=>{if(busy)return;codeSent=false;message='';$('auth-code').value='';render();};
-  $('auth-logout').onclick=()=>perform(async()=>{await auth.signOut();user=null;stats=null;});
+  $('auth-logout').onclick=()=>perform(async()=>{await auth.signOut();user=null;stats=null;$('auth-password-form').reset();$('auth-login-password').value='';});
   $('session-logout').onclick=$('auth-logout').onclick;
   async function refreshSession(){
     if(!auth.configured || busy || document.hidden)return;
@@ -68,6 +88,7 @@ export function setupAuth(t) {
     render();
   }
   window.addEventListener('focus',refreshSession);
+  window.addEventListener('storage',event=>{if(event.key==='shopping.home.auth.remembered'||event.key===null)refreshSession();});
   document.addEventListener('visibilitychange',refreshSession);
   setInterval(()=>{if(user)refreshSession();},60000);
   setInterval(()=>{if(retryUntil){if(Date.now()>=retryUntil){retryUntil=0;if(message==='authRateLimit')message='';}render();}},1000);

@@ -47,6 +47,8 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
         const edit=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/edit$/);
         const sold=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/sold$/);
         if(sold&&req.method==='POST')return json(200,listings.sold(token,sold[1]));
+        const relist=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/relist$/);
+        if(relist&&req.method==='POST')return json(200,listings.relist(token,relist[1]));
         if((path==='/api/listings'||edit) && req.method==='POST'){
           accounts.requireVerified(token);
           const type=req.headers['content-type']||'';
@@ -66,6 +68,12 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       if(path==='/health' && req.method==='GET')return json(200,{ok:true});
       if(path==='/api/status' && req.method==='GET')return json(200,{ready:mailReady});
       if(path==='/api/session' && req.method==='GET')return json(200,{user:accounts.requireVerified(token)});
+      if(path==='/api/password-login'&&req.method==='POST'){
+        const body=await jsonBody(req);return json(200,await accounts.signInPassword(body.email,body.password,ip,body.rememberUntil));
+      }
+      if(path==='/api/password'&&req.method==='POST'){
+        accounts.requireVerified(token);const body=await jsonBody(req);return json(200,await accounts.setPassword(token,body.password,body.currentPassword));
+      }
       if(path==='/api/admin/stats' && req.method==='GET')return json(200,accounts.adminStats(token));
       if(path==='/api/send-code' && req.method==='POST'){
         if(!mailReady)throw new AuthError(503,'authUnavailable');
@@ -73,7 +81,7 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       }
       if(path==='/api/verify-code' && req.method==='POST'){
         if(!mailReady)throw new AuthError(503,'authUnavailable');
-        const body=await jsonBody(req);return json(200,accounts.verifyCode(body.email,body.code,ip));
+        const body=await jsonBody(req);return json(200,accounts.verifyCode(body.email,body.code,ip,body.rememberUntil));
       }
       if(path==='/api/logout' && req.method==='POST'){await jsonBody(req);accounts.logout(token);return json(200,{ok:true});}
       if(path==='/src/auth-config.js' && req.method==='GET'){

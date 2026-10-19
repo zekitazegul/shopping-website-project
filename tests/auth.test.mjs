@@ -8,6 +8,7 @@ import {Accounts} from '../server/accounts.mjs';
 import {createApp} from '../server/http.mjs';
 import {createAuth,validAuthConfig} from '../src/auth.js';
 const root=resolve(import.meta.dirname,'..');
+const memoryStorage=()=>{const values=new Map();return {getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};};
 function setup(t,{sendFailure=false}={}){
   let time=Date.UTC(2026,9,19,12,10,0);const mail=[];
   const accounts=new Accounts({filename:':memory:',secret:'test-secret-'.repeat(4),adminEmail:'owner@example.test',now:()=>time,sendMail:async value=>{if(sendFailure)throw Error('private SMTP error');mail.push(value);}});
@@ -23,6 +24,56 @@ async function api(t,options={}){
   const call=(path,{body,token,headers={}}={})=>fetch(base+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{}) ,...headers},...(body?{body:JSON.stringify(body)}:{})});
   return {...state,base,call};
 }
+test('remember today persists across tabs, expires at local midnight on server and clears on logout',async t=>{
+  const {base,mail,now,advance,accounts}=await api(t);const persistentStorage=memoryStorage();
+  const options={persistentStorage,now,fetcher:(path,options)=>fetch(base+path,options)};
+  const first=createAuth({url:'/api'},{...options,storage:memoryStorage()});
+  await first.sendCode('remember@example.test');await first.verifyCode('remember@example.test',mail[0].code,true);
+  const saved=JSON.parse(persistentStorage.getItem('shopping.home.auth.remembered'));const midnight=new Date(now());midnight.setHours(24,0,0,0);
+  assert.equal(saved.expiresAt,Math.min(midnight.getTime(),now()+86400000));
+  const second=createAuth({url:'/api'},{...options,storage:memoryStorage()});assert.equal((await second.access()).email,'remember@example.test');
+  advance(saved.expiresAt-now());assert.equal(await second.access(),null);assert.throws(()=>accounts.requireVerified(saved.token),/authInvalid/);assert.equal(persistentStorage.getItem('shopping.home.auth.remembered'),null);
+  await first.sendCode('remember@example.test');await first.verifyCode('remember@example.test',mail.at(-1).code,true);
+  const third=createAuth({url:'/api'},{...options,storage:memoryStorage()});const token=JSON.parse(persistentStorage.getItem('shopping.home.auth.remembered')).token;
+  await third.signOut();assert.equal(await first.access(),null);assert.throws(()=>accounts.requireVerified(token),/authInvalid/);
+});
+test('unchecked login stays in current tab and temporary network failures retain remembered login',async t=>{
+  const {base,mail,now}=await api(t);const persistentStorage=memoryStorage(),storage=memoryStorage();let offline=false;
+  const options={persistentStorage,now,fetcher:(path,options)=>{if(offline)throw Error('offline');return fetch(base+path,options);}};
+  const auth=createAuth({url:'/api'},{...options,storage});await auth.sendCode('tab@example.test');await auth.verifyCode('tab@example.test',mail[0].code);
+  assert.equal(persistentStorage.getItem('shopping.home.auth.remembered'),null);assert.equal(await createAuth({url:'/api'},{...options,storage:memoryStorage()}).access(),null);
+  assert.ok(await createAuth({url:'/api'},{...options,storage}).access());
+  await auth.sendCode('other@example.test');await auth.verifyCode('other@example.test',mail.at(-1).code,true);offline=true;await assert.rejects(auth.access(),/authNetwork/);offline=false;assert.equal((await auth.access()).email,'other@example.test');
+});
+test('verified accounts create hashed passwords and sign in without email codes',async t=>{
+  const {accounts,mail}=setup(t);const password='example test password 123';
+  await assert.rejects(accounts.setPassword(null,password),/authInvalid/);await assert.rejects(accounts.signInPassword('new@example.test',password,'ip'),/authPasswordInvalid/);
+  await accounts.sendCode('person@example.test','ip');const original=accounts.verifyCode('person@example.test',mail[0].code,'ip');
+  await assert.rejects(accounts.setPassword(original.token,'short'),/authPasswordLength/);await accounts.setPassword(original.token,password);
+  const stored=accounts.db.prepare('SELECT * FROM account_passwords').get();assert.notEqual(stored.digest,password);assert.equal(stored.digest.length,128);assert.equal(stored.salt.length,32);
+  const login=await accounts.signInPassword('person@example.test',password,'ip');assert.equal(login.user.admin,false);assert.equal(login.user.hasPassword,true);assert.equal(mail.length,1);
+  await assert.rejects(accounts.signInPassword('person@example.test','wrong password','ip'),/authPasswordInvalid/);
+  for(let i=0;i<10;i++){try{await accounts.signInPassword('nonexistent@example.test','wrong','another-ip');}catch{}}
+  await assert.rejects(accounts.signInPassword('nonexistent@example.test','wrong','another-ip'),/authRateLimit/);
+});
+test('password changes require current password or fresh code and revoke other sessions',async t=>{
+  const {accounts,mail,advance}=setup(t);await accounts.sendCode('person@example.test','ip');const codeSession=accounts.verifyCode('person@example.test',mail[0].code,'ip');
+  await accounts.setPassword(codeSession.token,'initial password 123');const login=await accounts.signInPassword('person@example.test','initial password 123','ip');
+  await assert.rejects(accounts.setPassword(login.token,'replacement password 456','wrong'),/authPasswordReauth/);
+  await accounts.setPassword(login.token,'replacement password 456','initial password 123');assert.throws(()=>accounts.requireVerified(codeSession.token),/authInvalid/);
+  await assert.rejects(accounts.signInPassword('person@example.test','initial password 123','ip'),/authPasswordInvalid/);
+  advance(60001);await accounts.sendCode('person@example.test','ip');const reset=accounts.verifyCode('person@example.test',mail.at(-1).code,'ip');
+  await accounts.setPassword(reset.token,'recovered password 789');assert.throws(()=>accounts.requireVerified(login.token),/authInvalid/);
+  advance(600000);await assert.rejects(accounts.setPassword(reset.token,'another password 123'),/authPasswordReauth/);
+});
+test('real HTTP password login and remembered client session need no new code',async t=>{
+  const {base,mail,now,call}=await api(t);const persistentStorage=memoryStorage();const options={now,persistentStorage,fetcher:(path,options)=>fetch(base+path,options)};
+  const auth=createAuth({url:'/api'},{...options,storage:memoryStorage()});await auth.sendCode('person@example.test');await auth.verifyCode('person@example.test',mail[0].code);await auth.setPassword('a site password 123');await auth.signOut();
+  const user=await auth.signInPassword('person@example.test','a site password 123',true);assert.equal(user.hasPassword,true);assert.equal(mail.length,1);
+  assert.ok(await createAuth({url:'/api'},{...options,storage:memoryStorage()}).access());
+  assert.equal((await call('/api/password',{body:{password:'a forged password'}})).status,401);
+  assert.equal((await call('/api/password-login',{body:{email:'person@example.test',password:'a site password 123',rememberUntil:now()+86400001}})).status,400);
+});
 test('only a correct unexpired code creates an account; replay and forged tokens fail',async t=>{
   const {accounts,mail}=setup(t);await accounts.sendCode(' PERSON@example.test ','ip','tr');
   assert.equal(mail[0].locale,'tr');assert.equal(accounts.db.prepare('SELECT count(*) n FROM users').get().n,0);
@@ -103,9 +154,11 @@ test('SQLite online backup restores verified accounts and sessions on a new data
   try{
     first=new Accounts({filename:resolve(directory,'source.sqlite'),secret,adminEmail:'owner@example.test',sendMail:async value=>{mail=value;}});
     await first.sendCode('owner@example.test','ip');const session=first.verifyCode('owner@example.test',mail.code,'ip');
+    await first.setPassword(session.token,'backup example password 123');
     await backup(first.db,resolve(directory,'restored.sqlite'));first.close();first=null;
     restored=new Accounts({filename:resolve(directory,'restored.sqlite'),secret,adminEmail:'owner@example.test',sendMail:async()=>{}});
     assert.equal(restored.requireVerified(session.token).admin,true);assert.equal(restored.adminStats(session.token).accounts,1);
+    assert.equal((await restored.signInPassword('owner@example.test','backup example password 123','ip')).user.admin,true);
     restored.logout(session.token);assert.throws(()=>restored.requireVerified(session.token),/authInvalid/);
   }finally{
     first?.close();restored?.close();

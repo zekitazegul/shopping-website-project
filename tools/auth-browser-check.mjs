@@ -32,10 +32,10 @@ try {
     await route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Expose-Headers':'Retry-After','Retry-After':'2'},body:JSON.stringify(data)});
   });
   await page.reload();await page.selectOption('#language','en');
-  await page.locator('#account-button').click();await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button').click();
+  await page.locator('#account-button').click();await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button[type=submit]').click();
   await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Wait'));
-  ensure(await page.locator('#auth-email-form button').isDisabled(),'Rate limit did not disable repeated submission');
-  await page.waitForFunction(()=>!document.querySelector('#auth-email-form button').disabled);await page.locator('#auth-email-form button').click();
+  ensure(await page.locator('#auth-email-form button[type=submit]').isDisabled(),'Rate limit did not disable repeated submission');
+  await page.waitForFunction(()=>!document.querySelector('#auth-email-form button[type=submit]').disabled);await page.locator('#auth-email-form button[type=submit]').click();
   await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code','000000');await page.locator('#auth-code-form button[type=submit]').click();
   await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Unable'));
@@ -51,7 +51,7 @@ try {
   await page.locator('#admin-login').click();
   await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('does not have admin'));
   await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
-  admin=true;await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
+  admin=true;await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code','123456');await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-admin-panel').waitFor({state:'visible'});
   ensure(await page.locator('#auth-total').textContent()==='5','Admin stats missing');
   ensure(await page.locator('#session-admin-badge').isVisible(),'Admin badge missing');
