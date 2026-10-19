@@ -1,2 +1,2 @@
-// Only public project settings belong here. Never add SMTP passwords or service-role keys.
-export const authConfig = {url:'',publishableKey:''};
+// The local home server supplies /api dynamically. Never add SMTP passwords here.
+export const authConfig = {url:''};

@@ -18,17 +18,16 @@ try {
     }
   }
   await page.locator('#auth-close').click();
-  await page.route('**/src/auth-config.js',route=>route.fulfill({contentType:'text/javascript',body:"export const authConfig={url:'https://auth-test.supabase.co',publishableKey:'sb_publishable_test'};"}));
+  await page.route('**/src/auth-config.js',route=>route.fulfill({contentType:'text/javascript',body:"export const authConfig={url:'https://home.example.test/api'};"}));
   let admin=false;
-  await page.route('https://auth-test.supabase.co/**',async route=>{
+  await page.route('https://home.example.test/api/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname;
     const body=request.postDataJSON();let data={},status=200;
-    if(path.endsWith('/verify')){
-      if(body.token==='000000')status=400;
-      else data={access_token:'test-only-token',expires_in:3600};
-    }else if(path.endsWith('/user'))data={id:'test-user',email:'person@example.test',email_confirmed_at:'2026-10-19',user_metadata:{admin:true}};
-    else if(path.endsWith('/account_access'))data={verified:true,admin};
-    else if(path.endsWith('/admin_account_stats'))data={accounts:5,verified:4};
+    if(path.endsWith('/verify-code')){
+      if(body.code==='000000')status=400;
+      else data={token:'test-only-token',expiresAt:Date.now()+3600000};
+    }else if(path.endsWith('/session'))data={user:{id:'test-user',email:'person@example.test',admin}};
+    else if(path.endsWith('/admin/stats'))data={accounts:5,verified:4};
     await route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'},body:JSON.stringify(data)});
   });
   await page.reload();await page.selectOption('#language','en');

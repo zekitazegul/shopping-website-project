@@ -1,0 +1,30 @@
+name: shopping-marketplace
+services:
+  marketplace:
+    build: .
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:4180:4180"
+    environment:
+      SERVER_CONFIG_PATH: /app/private/server-config.json
+    volumes:
+      - accounts-data:/app/.server-data
+      - private-config:/app/private
+      - accounts-backups:/app/backups
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+volumes:
+  accounts-data:
+  private-config:
+  accounts-backups:

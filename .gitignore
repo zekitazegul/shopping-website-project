@@ -10,3 +10,6 @@ coverage/
 Thumbs.db
 
 preview-*.png
+.server-data/
+.server-config.json
+backups/

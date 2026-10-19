@@ -3,9 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=24" },
   "scripts": {
     "start": "node tools/serve.mjs",
+    "server": "node server/main.mjs",
+    "server:backup": "node server/backup.mjs",
     "build": "node tools/build.mjs",
     "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "nodemailer": "^10.1.7"
   }
 }

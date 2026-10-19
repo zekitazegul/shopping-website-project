@@ -18,7 +18,15 @@ Demo voor een internationaal tweedehandsplatform, te beginnen met Nederland, Bel
 Start: `npm start` → http://127.0.0.1:4173
 Controle: `npm test`
 
-Node.js 20.11+ required. No external packages or paid services. Build: `npm run build`.
+Node.js 24+ required. Install the free SMTP dependency with `npm ci`. Build: `npm run build`.
+
+## Yerel üyelik sunucusu / Local account server / Lokale accountserver
+
+TR: Üyelik için Supabase kaldırıldı. Docker'da Node.js + SQLite sunucusu çalışır: `docker compose up -d --build`, adres `http://127.0.0.1:4180`. Kalıcı hesaplar ve gizli ayarlar Docker volume'larındadır. Yahoo uygulama parolası yerel kurulum aracına girilmelidir; girilene kadar üyelik kapalıdır. GitHub'daki siteyi bu sunucuya bağlamak için ayrıca dışarıdan erişilen HTTPS adresi gerekir. Kurulum ve taşınabilir yedekleme: [AUTH_SETUP.md](docs/AUTH_SETUP.md).
+
+EN: Supabase has been removed from the account system. The Node.js + SQLite server runs in Docker: `docker compose up -d --build`, at `http://127.0.0.1:4180`. Persistent accounts and private settings live in Docker volumes. Enter a Yahoo app password through the local setup tool; registration remains disabled until configured. Connecting the GitHub site also requires a publicly reachable HTTPS endpoint. Setup and portable backups: [AUTH_SETUP.md](docs/AUTH_SETUP.md).
+
+NL: Supabase is verwijderd uit het accountsysteem. De Node.js + SQLite-server draait in Docker: `docker compose up -d --build`, op `http://127.0.0.1:4180`. Permanente accounts en privé-instellingen staan in Docker-volumes. Voer een Yahoo-appwachtwoord in via het lokale installatiehulpmiddel; registratie blijft uitgeschakeld tot dit is ingesteld. Voor verbinding met de GitHub-site is ook een extern bereikbaar HTTPS-adres nodig. Installatie en overdraagbare back-ups: [AUTH_SETUP.md](docs/AUTH_SETUP.md).
 
 ## Yayınlama / Publishing / Publicatie
 

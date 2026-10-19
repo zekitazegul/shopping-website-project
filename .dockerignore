@@ -1,0 +1,17 @@
+.git
+.github
+.openai
+.vscode
+node_modules
+dist
+build
+backups
+.server-data
+.server-config.json
+.env
+.env.*
+*.log
+preview-*.png
+tests
+docs
+tools

@@ -36,7 +36,7 @@ export function setupAuth(t) {
   $('admin-login').onclick=()=>open(true);
   $('auth-close').onclick=()=>$('auth-dialog').close();
   $('auth-email-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
-    email=$('auth-email').value.trim();await auth.sendCode(email);codeSent=true;message='authSent';$('auth-code').value='';
+    email=$('auth-email').value.trim();await auth.sendCode(email,document.documentElement.lang);codeSent=true;message='authSent';$('auth-code').value='';
   });};
   $('auth-code-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
     user=await auth.verifyCode(email,$('auth-code').value.trim());

@@ -1,38 +1,86 @@
-# Email-code accounts and admin access
+# Home-server accounts
 
-TR: Giriş ekranı ve Supabase bağlantı kodu hazırdır; canlı üyelik, Supabase ve SMTP yapılandırılana kadar kapalıdır. İlk yönetici adresi kullanıcı tarafından belirlenmiştir; tarayıcı kodunda e-posta karşılaştırmasıyla yönetici yetkisi verilmez. Gerçek alım-satım henüz yoktur. Bu işlemler eklendiğinde doğrulanmış hesap kontrolü sunucuda zorunlu olmalıdır.
+TR: Üyelik artık ücretli bir hizmete veya Supabase'e bağlı değildir. Node.js + SQLite sunucusu ayrı bir Docker Compose projesidir. İlk yönetici adresi yerel gizli ayarda belirlenir; ancak o adrese gönderilen kod doğrulandıktan sonra yönetici yetkisi alınır. Yahoo uygulama parolası girilene kadar üyelik kapalıdır. Yerel adres: `http://127.0.0.1:4180`. GitHub'daki halka açık demo, HTTPS sunucu bağlantısı yapılana kadar üyelik kabul etmez.
 
-EN: The sign-in UI and Supabase integration code are ready; live membership stays disabled until Supabase and SMTP are configured. The initial admin address is selected by the owner; comparing an email address in browser code never grants admin rights. Actual buying/selling is not implemented. Future transaction endpoints must enforce verified accounts on the server.
+EN: Accounts no longer depend on Supabase or a paid service. The Node.js + SQLite server runs in its own Docker Compose project. The initial administrator is selected in private server configuration; admin access requires verifying the code delivered to that address. Signup stays disabled until a Yahoo app password is configured. Local URL: `http://127.0.0.1:4180`. The public GitHub demo does not accept registrations until an HTTPS server connection is configured.
 
-NL: De aanmeldinterface en Supabase-integratiecode zijn klaar; registratie blijft uitgeschakeld totdat Supabase en SMTP zijn ingesteld. De eigenaar kiest het eerste beheerdersadres; een e-mailvergelijking in browsercode geeft nooit beheerdersrechten. Echt kopen/verkopen is niet geïmplementeerd. Toekomstige transactie-endpoints moeten geverifieerde accounts op de server verplichten.
+NL: Accounts zijn niet langer afhankelijk van Supabase of een betaalde dienst. De Node.js + SQLite-server draait in een eigen Docker Compose-project. De eerste beheerder wordt ingesteld in de privéconfiguratie; beheertoegang vereist verificatie van de code die naar dat adres wordt gestuurd. Registratie blijft uitgeschakeld totdat een Yahoo-appwachtwoord is ingesteld. Lokaal adres: `http://127.0.0.1:4180`. De openbare GitHub-demo accepteert geen registraties totdat een HTTPS-serververbinding is ingesteld.
 
-## Owner setup
+## Local Docker setup
 
-1. Create/connect a Supabase account and a Free project, preferably in an EU region. Do not enable a paid plan. No project has been created by this code.
-2. Apply `supabase/migrations/202610190001_accounts.sql` once through Supabase's SQL editor or migration tooling. The migration creates a private admin-role table and server-checked access/statistics functions. Do not expose the `private` schema through the Data API.
-3. Enable email authentication and disable anonymous sign-in. Set the Site URL to `https://zekitazegul.github.io/shopping-website-project/`. Use email-code templates containing `{{ .Token }}` for both signup confirmation and passwordless sign-in. Set OTP length to 6 and expiration to 600 seconds; keep resend rate limits enabled.
-4. Configure a verified SMTP sender using credentials stored only in Supabase's protected settings. Supabase's default SMTP only sends to project-team email addresses and is unsuitable for general visitor signup. Do not commit credentials or put SMTP/service-role secrets in GitHub Variables or frontend code. No SMTP provider is configured yet.
-5. Add repository Actions **Variables** `SUPABASE_URL` (HTTPS project URL) and `SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`). These two values are intentionally public. The build rejects secret keys. Empty values keep signup safely disabled. For local development, set these environment variables, run the build, and serve `dist/` rather than changing the tracked placeholder configuration.
-6. Trigger the Pages workflow. Validate an actual signup using the owner's mailbox: receive a code, reject an incorrect/expired code, verify a valid code once, sign out, and verify a normal account cannot call `admin_account_stats`. Local automated tests mock Supabase and do not prove real email delivery or live database grants.
-7. After the owner has verified their email, assign only that account as admin through the SQL editor. Replace the example below with the owner-approved address, and check exactly one row is returned. No other user can execute this administrative SQL through the site.
+Run from this checkout using Docker Desktop's Linux engine:
 
-```sql
-insert into private.admin_users(user_id)
-select id from auth.users
-where lower(email) = lower('OWNER_APPROVED_EMAIL')
-  and email_confirmed_at is not null
-  and not is_anonymous
-on conflict (user_id) do nothing
-returning user_id;
+```powershell
+docker compose up -d --build
 ```
 
-8. Open the site's admin sign-in, verify with a new email code, and confirm account statistics appear. A normal member must receive an access-denied message, including when they alter user metadata or browser storage. Admin role removal is a server-side delete from `private.admin_users`.
+The service publishes only `127.0.0.1:4180`, uses a non-root container user, and restarts when Docker starts. The existing Nextcloud stack is separate and is not modified. Persistent data lives in three Docker volumes, outside OneDrive:
 
-## Session and transaction boundaries
+| Volume | Contents |
+| --- | --- |
+| `shopping-marketplace_accounts-data` | SQLite database, sessions, hashed codes, private server key |
+| `shopping-marketplace_private-config` | Private SMTP and administrator settings |
+| `shopping-marketplace_accounts-backups` | Consistent database backup snapshots |
 
-- Access tokens are kept only in the current tab's session storage. OTPs and refresh tokens are never stored. After token expiry, sign in again with a new email code. Every account/admin access is validated against Supabase; editing local storage cannot grant privileges.
-- The UI only shows aggregate admin statistics. It does not expose the auth user directory or grant role-management capabilities to visitors.
-- No purchase, payment, listing-creation or seller-contact API currently exists. `public.has_verified_account()` is a server-side building block, not an implemented trade restriction by itself. Every future purchase/sale endpoint and database policy must require that function plus ownership/authorization checks; hiding buttons is insufficient.
-- GitHub Pages currently hosts a demonstration. Before enabling actual commercial transactions, move to hosting permitted for that purpose. A new domain alone does not change hosting capabilities or usage terms.
+TR: Docker Desktop kapalıysa veya bilgisayar uyuyorsa servis çalışmaz. Otomatik Windows başlangıç görevi kurulmadı.
 
-References: [Supabase email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [SMTP requirements](https://supabase.com/docs/guides/auth/auth-smtp), [database security](https://supabase.com/docs/guides/database/postgres/row-level-security), [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits).
+EN: The service is unavailable while Docker Desktop is stopped or the PC is asleep. No Windows startup task has been installed.
+
+NL: De dienst is niet beschikbaar wanneer Docker Desktop is gestopt of de pc slaapt. Er is geen Windows-opstarttaak geïnstalleerd.
+
+## Yahoo configuration
+
+1. In Yahoo Account Security, generate an **app password** for this application. Do not use your normal Yahoo password. Never paste the app password into chat, GitHub, an issue, or a public file.
+2. Run the following locally in PowerShell. The application password is entered through a hidden prompt. The script saves `.server-config.json` with restricted Windows permissions, passes it to the container via stdin, and restarts only this service. Both the local file and Docker private volume contain sensitive credentials; neither is included in Git or the Docker image.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/setup-home-server.ps1
+```
+
+3. Enter the owner-approved administrator address, Yahoo sender address, and app password. The server uses `smtp.mail.yahoo.com:465` with TLS. A mailbox provider may enforce sending limits; real delivery has not yet been verified.
+4. Open `http://127.0.0.1:4180`, request a code for the administrator address, and verify it. This creates the admin account only after mailbox verification. Verify with a second mailbox that normal members cannot open admin statistics. No real accounts have been created by automated tests.
+
+TR: Kurulum komutu uygulama parolasını gizli sorar ve konteyneri yeniden başlatır. Parolayı sohbete yazma. İlk gerçek kod gönderimi bu ayardan sonra denenmelidir.
+
+EN: The setup command prompts for the app password without displaying it and restarts the container. Do not send the password in chat. Test actual code delivery after configuration.
+
+NL: Het installatiecommando vraagt het appwachtwoord zonder het te tonen en herstart de container. Deel het wachtwoord niet in de chat. Test echte codebezorging na de configuratie.
+
+## Security and account behavior
+
+- Codes are cryptographically generated, expire after 10 minutes, work once, and are stored only as keyed digests. Maximum five verification attempts per challenge; resend cooldown is 60 seconds. Persistent email/IP rate buckets limit requests without storing raw IP addresses.
+- Only the server-selected email receives the initial admin role after code verification. Client-supplied roles, browser storage and query parameters cannot grant permissions.
+- Sessions expire after 24 hours and are revoked server-side on logout. Session tokens are stored as keyed hashes in SQLite and as bearer tokens only in the current browser tab's session storage. Codes are never returned through the API or printed in logs.
+- API responses reject unapproved browser origins; private configuration, database, source-server files and backups are never served. Only TLS SMTP is supported. Missing SMTP settings disable signup rather than simulate delivery.
+- Actual buying, selling, seller contact and payment APIs are not implemented. Future transaction handlers must call `accounts.requireVerified(token)` and enforce ownership rules on the server. The current demo does not perform commercial transactions.
+
+## Connecting the public website
+
+The current Nextcloud home server is documented for home-network access only. Do not point public visitors at `localhost` or a private LAN IP. No router forwarding, firewall exposure or public tunnel has been configured for this project.
+
+After an HTTPS endpoint is available for this home server:
+
+1. Add only the public hostname to private `allowedHosts` and `https://zekitazegul.github.io` to `allowedOrigins`. Keep port 4180 on loopback behind the HTTPS proxy/tunnel.
+2. Apply the private configuration and restart the service.
+3. Set the GitHub Actions repository Variable `HOME_AUTH_API_URL` to `https://YOUR_SERVER_HOST/api` and trigger Pages publication. No SMTP secrets belong in repository Variables.
+4. Test actual delivery, rejection of incorrect/expired/reused codes, admin and member permissions, logout, and two different external devices. The automated local tests do not prove Yahoo delivery or internet reachability.
+
+TR: Dışarıdan erişim için HTTPS bağlantısı ve sonrasında gerçek e-posta testi gerekir; bu aşamalar henüz yapılmadı.
+
+EN: External access requires an HTTPS connection and a subsequent real email test; those steps are still pending.
+
+NL: Externe toegang vereist een HTTPS-verbinding en daarna een echte e-mailtest; die stappen moeten nog worden uitgevoerd.
+
+## Backups and migration
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/backup-home-server.ps1
+```
+
+This uses SQLite's online backup API, copies the server key and private configuration, then exports a snapshot from Docker into the ignored, restricted `backups/` folder. It does not need to stop the service. These backups contain account data and SMTP credentials: use encrypted storage/transfer and never upload them to GitHub.
+
+For migration, install Docker on the new computer, copy this checkout without `node_modules`, pull/install dependencies, and create a fresh Compose service. Transfer the exported backup privately. Stop only the new marketplace service, restore `accounts.sqlite` and `server.key` into its data volume and `server-config.json` into its private-config volume, with ownership `1000:1000` and private file permissions. Restore offline using a one-off maintenance container with the same volumes; do not copy a live SQLite database file. Remove stale WAL/SHM files only in the stopped restore target. Restart and verify sign-in/admin rights before changing any public endpoint. Keep the old host and backup intact until verification succeeds.
+
+Tested boundaries: real SQLite/HTTP code verification and server roles using an in-memory mail collector, Docker health checks, and backup export. No real email is sent by tests.
+
+References: [Yahoo app passwords](https://help.yahoo.com/kb/SLN15241.html), [Yahoo SMTP settings](https://help.yahoo.com/kb/SLN4724.html), [Nodemailer SMTP](https://nodemailer.com/smtp), [Node.js SQLite](https://nodejs.org/api/sqlite.html).
