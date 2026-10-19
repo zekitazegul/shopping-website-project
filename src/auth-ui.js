@@ -18,15 +18,25 @@ export function setupAuth(t) {
   let revision=0;
   let retryUntil=0;
   let notificationTimer;
-  function finishLogin(){
-    $('auth-dialog').close();
+  let loginSuccess=false,redirectTimer;
+  function returnHome(){
+    if(!loginSuccess||!user)return;
+    clearTimeout(redirectTimer);loginSuccess=false;message='';
+    if($('auth-dialog').open)$('auth-dialog').close();
+    render();
     if(location.hash)history.replaceState(history.state,'',location.pathname+location.search);
     $('account-button').focus({preventScroll:true});window.scrollTo(0,0);
     clearTimeout(notificationTimer);$('login-notification-text').textContent=t('authLoginSuccess');$('login-notification').hidden=false;
     notificationTimer=setTimeout(()=>{$('login-notification').hidden=true;},8000);
   }
+  function finishLogin(){
+    loginSuccess=true;message='authLoginWelcome';render();$('auth-dialog').scrollTop=0;
+    $('auth-status').focus({preventScroll:true});
+    clearTimeout(redirectTimer);redirectTimer=setTimeout(returnHome,1600);
+  }
   $('login-notification-close').onclick=()=>{clearTimeout(notificationTimer);$('login-notification').hidden=true;};
   function render() {
+    if(!user&&loginSuccess){clearTimeout(redirectTimer);loginSuccess=false;message='';}
     $('login-notification-close').setAttribute('aria-label',t('authClose'));
     if(!user)$('login-notification').hidden=true;
     if(!$('login-notification').hidden)$('login-notification-text').textContent=t('authLoginSuccess');
@@ -38,28 +48,32 @@ export function setupAuth(t) {
     $('session-email').textContent=user?.email || '';
     $('session-admin-badge').hidden=!user?.admin;
     $('session-admin-link').hidden=!user?.admin;
-    $('auth-heading').textContent=t(adminIntent?'authAdminTitle':'authTitle');
+    $('auth-heading').textContent=t(loginSuccess?'authLoginComplete':adminIntent?'authAdminTitle':'authTitle');
+    $('auth-help').hidden=loginSuccess;
     $('auth-email-form').hidden=!!user || !auth.configured || codeSent;
     $('auth-code-form').hidden=!!user || !auth.configured || !codeSent;
     $('auth-remember-option').hidden=!!user || !auth.configured;
     $('auth-remember').disabled=busy;
-    $('auth-session').hidden=!user;
-    $('auth-password-form').hidden=!user;
+    $('auth-session').hidden=!user||loginSuccess;
+    $('auth-password-form').hidden=!user||loginSuccess;
     $('auth-password-title').textContent=t(user?.hasPassword?'authPasswordChange':'authPasswordCreate');
     $('auth-user-email').textContent=user?.email || '';
     $('auth-admin-panel').hidden=!user?.admin || !stats;
     $('auth-total').textContent=String(stats?.accounts ?? '');
     $('auth-verified').textContent=String(stats?.verified ?? '');
     const remaining=Math.max(0,Math.ceil((retryUntil-Date.now())/1000));
-    $('auth-status').textContent=remaining && !busy?t('authRetryAfter').replace('{seconds}',String(remaining)):t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
-    for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy || (remaining>0 && button.type==='submit');
+    const error=!!message&&!['authSent','authPasswordSaved','authLoginWelcome'].includes(message);
+    $('auth-status').dataset.state=loginSuccess?'success':error?'error':'';
+    $('auth-status').setAttribute('role',error?'alert':'status');$('auth-status').tabIndex=-1;
+    $('auth-status').textContent=loginSuccess?t('authLoginWelcome'):remaining && !busy?t('authRetryAfter').replace('{seconds}',String(remaining)):t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
+    for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy || loginSuccess || (remaining>0 && (button.type==='submit'||button.id==='auth-password-login'));
     document.dispatchEvent(new CustomEvent('accountchange',{detail:{user}}));
   }
-  async function perform(work,{login=false}={}) {
-    if(busy)return;revision++;busy=true;message='';render();
+  async function perform(work,{login=false,invalidMessage='authInvalid'}={}) {
+    if(busy||loginSuccess)return;revision++;busy=true;message='';render();
     let completed=false;
-    try{await work();completed=true;}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied','authPasswordInvalid','authPasswordLength','authPasswordReauth','authPasswordMismatch'].includes(error.message)?error.message:'authInvalid';}
-    finally{busy=false;render();if(completed&&login&&user)finishLogin();}
+    try{await work();completed=true;}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=error.message==='authInvalid'?invalidMessage:['authUnavailable','authNetwork','authRateLimit','authAdminDenied','authPasswordInvalid','authPasswordLength','authPasswordReauth','authPasswordMismatch'].includes(error.message)?error.message:'authInvalid';}
+    finally{busy=false;render();if(completed&&login&&user)finishLogin();else if(!completed&&$('auth-dialog').open){$('auth-dialog').scrollTop=0;$('auth-status').focus({preventScroll:true});}}
   }
   async function open(admin=false) {
     adminIntent=admin;message='';stats=null;
@@ -74,7 +88,7 @@ export function setupAuth(t) {
   $('admin-login').onclick=()=>open(true);
   $('session-admin-link').onclick=()=>open(true);
   $('auth-close').onclick=()=>$('auth-dialog').close();
-  $('auth-dialog').addEventListener('close',()=>{$('auth-password-form').reset();$('auth-login-password').value='';passwordToggles.forEach(toggle=>{toggle.input.type='password';toggle.update();});});
+  $('auth-dialog').addEventListener('close',()=>{if(loginSuccess)returnHome();$('auth-password-form').reset();$('auth-login-password').value='';passwordToggles.forEach(toggle=>{toggle.input.type='password';toggle.update();});});
   $('auth-login-password').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('auth-password-login').click();}});
   $('auth-email-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
     email=$('auth-email').value.trim();await auth.sendCode(email,document.documentElement.lang);codeSent=true;message='authSent';$('auth-code').value='';
@@ -84,10 +98,10 @@ export function setupAuth(t) {
     if(!user)throw new Error('authInvalid');
     codeSent=false;$('auth-code').value='';
     if(adminIntent){if(!user.admin)throw new Error('authAdminDenied');stats=await auth.adminStats();}
-  },{login:true});};
+  },{login:true,invalidMessage:'authCodeInvalid'});};
   $('auth-password-login').onclick=()=>{
-    if(!$('auth-email').reportValidity())return;
-    if(!$('auth-login-password').value){$('auth-login-password').focus();return;}
+    if(!$('auth-email').checkValidity()){message='authEmailInvalid';render();$('auth-email').focus();return;}
+    if(!$('auth-login-password').value){message='authPasswordRequired';render();$('auth-login-password').focus();return;}
     perform(async()=>{
       user=await auth.signInPassword($('auth-email').value.trim(),$('auth-login-password').value,$('auth-remember').checked);
       $('auth-login-password').value='';codeSent=false;

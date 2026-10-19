@@ -39,3 +39,17 @@ const visibilityLabels={tr:['Parolayı göster','Parolayı gizle'],en:['Show pas
 for(const [lang,[show,hide]] of Object.entries(visibilityLabels))Object.assign(authMessages[lang],{authShowPassword:show,authHidePassword:hide});
 const loginSuccessLabels={tr:'Giriş yapıldı. Hoş geldin!',en:'Signed in. Welcome!',nl:'Je bent ingelogd. Welkom!',de:'Erfolgreich angemeldet. Willkommen!',fr:'Connexion réussie. Bienvenue !',it:'Accesso effettuato. Benvenuto!',es:'Sesión iniciada. ¡Bienvenido!',pl:'Zalogowano. Witaj!',pt:'Sessão iniciada. Bem-vindo!'};
 for(const [lang,label] of Object.entries(loginSuccessLabels))authMessages[lang].authLoginSuccess=label;
+const loginFeedbackKeys=['authLoginComplete','authLoginWelcome','authEmailInvalid','authPasswordRequired','authCodeInvalid'];
+const loginFeedbackRows={
+tr:['Giriş başarılı','Hoş geldiniz! Girişiniz başarılı. Ana sayfaya yönlendiriliyorsunuz.','Geçerli bir e-posta adresi girin.','Lütfen site parolanızı girin.','Onay kodu hatalı veya süresi dolmuş. Kodunuzu kontrol edin ya da yeni bir kod isteyin.'],
+en:['Sign-in successful','Welcome! You have signed in successfully. Returning to the homepage.','Enter a valid email address.','Please enter your site password.','The code is incorrect or expired. Check your code or request a new one.'],
+nl:['Inloggen gelukt','Welkom! Je bent ingelogd. Je gaat naar de hoofdpagina.','Voer een geldig e-mailadres in.','Voer je wachtwoord voor deze site in.','De code is onjuist of verlopen. Controleer de code of vraag een nieuwe aan.'],
+de:['Anmeldung erfolgreich','Willkommen! Du bist angemeldet und wirst zur Startseite weitergeleitet.','Gib eine gültige E-Mail-Adresse ein.','Gib dein Website-Passwort ein.','Der Code ist falsch oder abgelaufen. Prüfe ihn oder fordere einen neuen an.'],
+fr:['Connexion réussie','Bienvenue ! Vous êtes connecté. Redirection vers l’accueil.','Saisissez une adresse e-mail valide.','Saisissez votre mot de passe du site.','Le code est incorrect ou expiré. Vérifiez-le ou demandez-en un nouveau.'],
+it:['Accesso riuscito','Benvenuto! Accesso effettuato. Ritorno alla pagina iniziale.','Inserisci un indirizzo e-mail valido.','Inserisci la password del sito.','Il codice è errato o scaduto. Controllalo o richiedine uno nuovo.'],
+es:['Acceso correcto','¡Bienvenido! Has iniciado sesión. Volviendo al inicio.','Introduce un correo electrónico válido.','Introduce tu contraseña del sitio.','El código es incorrecto o ha caducado. Revísalo o solicita uno nuevo.'],
+pl:['Logowanie udane','Witaj! Logowanie powiodło się. Przekierowanie na stronę główną.','Podaj prawidłowy adres e-mail.','Podaj hasło do strony.','Kod jest nieprawidłowy lub wygasł. Sprawdź go lub poproś o nowy.'],
+pt:['Entrada bem-sucedida','Bem-vindo! A sessão foi iniciada. A voltar à página inicial.','Introduza um endereço de e-mail válido.','Introduza a palavra-passe do site.','O código está incorreto ou expirou. Verifique-o ou peça um novo.']
+};
+for(const [lang,values] of Object.entries(loginFeedbackRows))Object.assign(authMessages[lang],Object.fromEntries(loginFeedbackKeys.map((key,index)=>[key,values[index]])));
+authMessages.tr.authLoginSuccess='Giriş başarılı. Hoş geldiniz!';

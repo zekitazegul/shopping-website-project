@@ -16,7 +16,7 @@ async function login(email){
   const context=await browser.newContext();const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
   await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();
   await page.fill('#auth-email',email);await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
-  await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#session-banner').waitFor({state:'visible'});return page;
+  await page.fill('#auth-code',mail.get(email));await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#session-banner').waitFor({state:'visible'});await page.locator('#auth-dialog').waitFor({state:'hidden'});return page;
 }
 try{
   const seller=await login('seller@example.test');ensure(await seller.locator('#listing-moderate').isHidden(),'Seller can moderate');

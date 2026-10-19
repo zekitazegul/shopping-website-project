@@ -1,5 +1,11 @@
 # 2026-10-19 — Fotoğraf galerisi / Photo gallery / Fotogalerij
 
+TR: Giriş pencerelerinde eksik/geçersiz e-posta, boş veya hatalı parola ve hatalı/süresi dolmuş kod için belirgin uyarılar gösterilir. Başarılı giriş aynı pencerede “Giriş başarılı” ve hoş geldiniz mesajıyla doğrulanır; ardından ana sayfaya dönülür. Parola ayarları bu geçiş sırasında gösterilmez.
+
+EN: Login dialogs show clear warnings for invalid email, missing or incorrect passwords, and incorrect/expired codes. Successful login first shows a welcome confirmation in the same dialog, then returns to the homepage. Password settings stay hidden during this transition.
+
+NL: Aanmeldvensters tonen duidelijke waarschuwingen voor ongeldige e-mailadressen, ontbrekende of onjuiste wachtwoorden en onjuiste/verlopen codes. Een succesvolle aanmelding toont eerst een welkomstmelding in hetzelfde venster en keert daarna terug naar de hoofdpagina. Wachtwoordinstellingen blijven tijdens deze overgang verborgen.
+
 TR: Yeni ilan başarıyla gönderilince form otomatik kapanır. İncelemeye gönderildiğini belirten onay penceresi, “Başka ilan ver” ve “Ana sayfaya dön” seçeneklerini sunar. Başka ilan boş form açar; başarısız gönderimde girilen metinler ve fotoğraflar korunur.
 
 EN: Successful listing submission closes the editor and opens a review confirmation with “Create another listing” and “Return to homepage”. Creating another opens an empty form; failed submission preserves entered text and photos.
