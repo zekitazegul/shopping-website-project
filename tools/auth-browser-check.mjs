@@ -38,14 +38,31 @@ try {
   ensure(await page.locator('#auth-session').isHidden(),'Invalid code granted access');
   await page.fill('#auth-code','123456');await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-session').waitFor({state:'visible'});
   ensure(await page.locator('#auth-admin-panel').isHidden(),'User metadata granted admin');
-  await page.locator('#auth-close').click();await page.locator('#admin-login').click();
+  ensure(await page.locator('#session-banner').isVisible(),'Signed-in indicator missing');
+  ensure(await page.locator('#session-email').textContent()==='person@example.test','Signed-in account missing');
+  ensure(await page.locator('#session-admin-badge').isHidden(),'Member displayed admin badge');
+  await page.locator('#auth-close').click();await page.reload();
+  await page.locator('#session-banner').waitFor({state:'visible'});
+  ensure(await page.locator('#account-button').getAttribute('data-signed-in')==='true','Reload lost signed-in state');
+  await page.locator('#admin-login').click();
   await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('does not have admin'));
   await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
   admin=true;await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code','123456');await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-admin-panel').waitFor({state:'visible'});
   ensure(await page.locator('#auth-total').textContent()==='5','Admin stats missing');
-  await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
+  ensure(await page.locator('#session-admin-badge').isVisible(),'Admin badge missing');
+  await page.locator('#auth-close').click();
+  for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
+    await page.selectOption('#language',lang);
+    for(const [width,height] of [[320,568],[800,360],[768,1024],[1024,768],[1440,900]]){
+      await page.setViewportSize({width,height});
+      ensure(!await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),'Signed-in banner overflow '+lang+' '+width);
+    }
+  }
+  await page.locator('#session-admin-link').click();await page.locator('#auth-admin-panel').waitFor({state:'visible'});await page.locator('#auth-close').click();
+  await page.locator('#session-logout').click();await page.locator('#session-banner').waitFor({state:'hidden'});
+  ensure(await page.locator('#account-button').getAttribute('data-signed-in')==='false','Logout retained signed-in button');
   ensure(await page.locator('#auth-admin-panel').isHidden(),'Logout retained admin access');
   ensure(!errors.length,errors.join('\n'));
-  console.log('PASS: 36 auth locale/viewports, setup state, mocked OTP, invalid code, member/admin authorization and logout. No email sent.');
+  console.log('PASS: OTP, member/admin access, session indicator, reload, banner logout, 36 auth + 45 signed-in locale/viewports. No email sent.');
 }finally{await browser.close();}

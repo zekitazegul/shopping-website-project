@@ -1,3 +1,11 @@
+# 2026-10-19 — Oturum göstergesi / Session indicator / Sessiestatus
+
+TR: Giriş sonrası sayfanın üstünde yeşil durum bandı, hesap e-postası, yönetici rozeti, yönetici paneli bağlantısı ve çıkış düğmesi gösterilir. Durum sayfa yenilemede sunucudan doğrulanır, çıkışta temizlenir ve sekmeye dönüldüğünde yeniden kontrol edilir. Dokuz dil ve mobil/masaüstü düzenleri güncellendi.
+
+EN: After sign-in, a green page banner shows the account email, administrator badge, admin-panel shortcut and sign-out button. The session is validated on reload, cleared on logout and checked again when returning to the tab. Updated all nine languages and mobile/desktop layouts.
+
+NL: Na aanmelding toont een groene balk het accountadres, de beheerdersbadge, een koppeling naar het beheerpaneel en een uitlogknop. De sessie wordt bij herladen geverifieerd, bij uitloggen verwijderd en opnieuw gecontroleerd bij terugkeer naar het tabblad. Alle negen talen en mobiele/desktopindelingen zijn bijgewerkt.
+
 # 2026-10-19 — Docker home server
 
 TR: Kullanıcının tercihiyle Supabase kaldırıldı. Üyelik, bağımsız Docker konteynerindeki Node.js + SQLite sunucusuna taşındı. Kod süresi, tekrar kullanım engeli, deneme sınırı, hız sınırı, sunucu tarafı yönetici kontrolü ve oturum iptali eklendi. Kodlar/oturumlar sunucuda yalnızca anahtarlı özet olarak tutulur. Yahoo SMTP kurulumu için gizli yerel araç, kalıcı Docker volume'ları ve dışa aktarılabilir SQLite yedeği hazırlandı. Yerel servis sağlıklı; Yahoo uygulama parolası ve dış erişim HTTPS bağlantısı bekleniyor. Gerçek e-posta gönderilmedi. Mevcut Nextcloud servisleri değiştirilmedi.
