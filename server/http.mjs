@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {AuthError} from './accounts.mjs';
 import {Listings} from './listings.mjs';
+import {Messaging} from './messaging.mjs';
 
 async function jsonBody(req){
   if(!req.headers['content-type']?.startsWith('application/json'))throw new AuthError(415,'authInvalid');
@@ -12,6 +13,7 @@ async function jsonBody(req){
 }
 export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0.0.1','localhost']}){
   const listings=new Listings(accounts);
+  const messaging=new Messaging(accounts);
   const allowedOrigins=new Set(origins);
   const server=createServer(async(req,res)=>{
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
@@ -28,6 +30,15 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       }
       const token=req.headers.authorization?.replace(/^Bearer /,'');
       const ip=req.socket.remoteAddress||'unknown'; // Never trust forwarded IP headers from arbitrary clients.
+      if(path.startsWith('/api/conversations')){
+        if(origin==='https://zekitazegul.github.io')throw new AuthError(403,'messageAccess');
+        if(path==='/api/conversations'&&req.method==='GET')return json(200,messaging.inbox(token));
+        if(path==='/api/conversations'&&req.method==='POST'){accounts.requireVerified(token);return json(201,messaging.start(token,await jsonBody(req)));}
+        const thread=path.match(/^\/api\/conversations\/([a-f0-9-]{36})$/);
+        if(thread&&req.method==='GET'){const before=new URL(req.url,'http://localhost').searchParams.get('before');return json(200,messaging.read(token,thread[1],before===null?undefined:Number(before)));}
+        const reply=path.match(/^\/api\/conversations\/([a-f0-9-]{36})\/messages$/);
+        if(reply&&req.method==='POST'){accounts.requireVerified(token);return json(200,messaging.send(token,reply[1],await jsonBody(req)));}
+      }
       if(path.startsWith('/api/listings')||path.startsWith('/api/my/listings')||path.startsWith('/api/admin/listings')||path.startsWith('/api/photos')){
         if(origin==='https://zekitazegul.github.io')throw new AuthError(403,'listingActionFailed');
         if(path==='/api/listings' && req.method==='GET')return json(200,listings.publicList());

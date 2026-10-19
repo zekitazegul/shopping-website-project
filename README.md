@@ -30,6 +30,12 @@ NL: Supabase is verwijderd uit het accountsysteem. De Node.js + SQLite-server dr
 
 ## Yayınlama / Publishing / Publicatie
 
+TR: Yayınlanan ilanlarda “Satıcıya mesaj yaz” ile özel konuşma başlatılır. İki farklı doğrulanmış hesap gerekir; kendi ilanına mesaj gönderilmez. “Mesajlar” menüsü okunmamış sayısını gösterir. Mesajlar uygulamada yalnızca konuşmanın iki tarafına açıktır; yönetici rolü başkalarının konuşmalarını açamaz. E-posta adresleri otomatik paylaşılmaz.
+
+EN: Use “Message seller” on a published listing to start a private conversation. Two different verified accounts are required; users cannot message their own listings. The “Messages” menu shows the unread count. Conversations are accessible in the application only to their two participants; administrator status cannot open other users' conversations. Email addresses are not automatically shared.
+
+NL: Gebruik “Verkoper een bericht sturen” bij een gepubliceerde advertentie voor een privégesprek. Twee verschillende geverifieerde accounts zijn nodig; gebruikers kunnen hun eigen advertentie niet berichten. Het menu “Berichten” toont het ongelezen aantal. Gesprekken zijn in de toepassing alleen toegankelijk voor de twee deelnemers; beheerdersrechten openen geen gesprekken van anderen. E-mailadressen worden niet automatisch gedeeld.
+
 TR: Gerçek ilan oluşturma, fotoğraf yükleme ve yönetici incelemesi ev sunucusunun HTTPS adresindedir. Yerelde `http://127.0.0.1:4180` kullanılır. Yeni ilanlar onaya kadar gizlidir. GitHub Pages örnek ilanlı demo olarak kalır ve ev sunucusundaki pazaryerine bağlantı verir. İlan metinleri kullanıcı tarafından yazıldığı dilde gösterilir.
 
 EN: Real listing creation, photo uploads and moderation run at the home server's HTTPS address, or locally at `http://127.0.0.1:4180`. New listings remain private until approved. GitHub Pages stays a sample-listing demo linking to the home-hosted marketplace. User-written listing text retains its original language.
