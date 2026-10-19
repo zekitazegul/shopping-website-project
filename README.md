@@ -1,19 +1,21 @@
 # Shopping Website Project
 
 ## Türkçe
-Hollanda odaklı, özgün bir ikinci el alışveriş platformu. Öncelik: ürünün bulunduğu ülkeye göre filtreleme; yalnızca Hollanda'daki ilanları seçebilme. Şimdilik proje hazırlığı aşamasındadır. Ücretli hizmet veya alan adı alınmamıştır.
+Hollanda odaklı ikinci el pazaryeri için yerel prototip. Yalnızca Hollanda’daki ürünleri seçebilir, arama ve filtreleri kullanabilir, favorileri tarayıcıda saklayabilirsin. Tüm ilanlar örnektir. Gerçek alım, satım ve ödeme yoktur.
+
+Çalıştır: `npm start` → http://127.0.0.1:4173
+Kontrol: `npm test`
 
 ## English
-An original second-hand marketplace focused on the Netherlands. Priority: filtering by the country where an item is located, including Netherlands-only listings. Currently at project setup stage. No paid services or domain have been purchased.
+Local prototype for a Netherlands-focused second-hand marketplace. Filter items by physical country, search, and save favorites in your browser. All listings are samples. Real buying, selling and payments are unavailable.
+
+Run: `npm start` → http://127.0.0.1:4173
+Check: `npm test`
 
 ## Nederlands
-Een origineel platform voor tweedehands handel, gericht op Nederland. Prioriteit: filteren op het land waar een artikel zich bevindt, met de mogelijkheid om alleen advertenties in Nederland te tonen. Het project bevindt zich in de voorbereidingsfase. Er zijn geen betaalde diensten of domeinnamen aangeschaft.
+Lokaal prototype voor een tweedehandsplatform gericht op Nederland. Filter op het land waar het artikel zich bevindt, zoek en bewaar favorieten in je browser. Alle advertenties zijn voorbeelden. Echt kopen, verkopen en betalen is niet beschikbaar.
 
-## Structure
-- src/: application source
-- public/: public static files
-- assets/: design assets
-- docs/: project documentation
-- tests/: automated tests
+Start: `npm start` → http://127.0.0.1:4173
+Controle: `npm test`
 
-The application stack will be selected in the next phase.
+Node.js 20.11+ required. No external packages, paid services, or deployment. See docs/PROJECT_PLAN.md and docs/RELEASE_NOTES.md.

@@ -1,0 +1,10 @@
+{
+  "name": "shopping-website-project",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node --test tests/market.test.mjs"
+  }
+}
