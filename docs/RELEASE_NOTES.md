@@ -1,5 +1,11 @@
 # 2026-10-19 — Fotoğraf galerisi / Photo gallery / Fotogalerij
 
+TR: Yeni ilan başarıyla gönderilince form otomatik kapanır. İncelemeye gönderildiğini belirten onay penceresi, “Başka ilan ver” ve “Ana sayfaya dön” seçeneklerini sunar. Başka ilan boş form açar; başarısız gönderimde girilen metinler ve fotoğraflar korunur.
+
+EN: Successful listing submission closes the editor and opens a review confirmation with “Create another listing” and “Return to homepage”. Creating another opens an empty form; failed submission preserves entered text and photos.
+
+NL: Na het versturen sluit het formulier en verschijnt een bevestiging met “Nog een advertentie plaatsen” en “Terug naar de hoofdpagina”. Een volgende advertentie opent een leeg formulier; bij een fout blijven tekst en foto’s behouden.
+
 TR: İlan fotoğrafına dokununca büyük görünüm açılır. İleri–geri düğmeleri, klavye okları ve küçük önizlemelerle tüm fotoğraflar incelenebilir. Fotoğraflar kırpılmadan gösterilir. Escape büyük görünümü kapatır ve ilan ayrıntılarına döner. Dokuz dil ve telefon/tablet/masaüstü düzenleri desteklenir.
 
 EN: Listing photos open in a larger viewer, with previous/next buttons, keyboard arrows and thumbnails. Photos are displayed without cropping. Escape closes the viewer and returns to listing details. Supports nine languages and phone/tablet/desktop layouts.

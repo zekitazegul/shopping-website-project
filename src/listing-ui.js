@@ -83,21 +83,36 @@ export function setupListingUI(t,account,onCatalog){
   }
   $('listing-form').onsubmit=async event=>{
     event.preventDefault();if(busy)return;busy=true;message='listingWorking';translate();$('listing-submit').disabled=true;
+    const submittingUser=account.getUser()?.id;
     try{
       const form=new FormData($('listing-form'));form.delete('photos');const photos=$('listing-photos').files;
       if((!editingId&&photos.length<1)||photos.length>4)throw Error('listingPhotoError');
       for(const [index,file] of [...photos].entries())form.append('photos',await compress(file),'photo-'+index+'.jpg');
-      await api.api(editingId?'/listings/'+editingId+'/edit':'/listings',form);message='listingSubmitted';$('listing-form').reset();
-      if(editingId){$('listing-editor').close();editingId=null;await loadManager();$('listing-manager-status').textContent=t('listingSubmitted');}await refresh();
+      await api.api(editingId?'/listings/'+editingId+'/edit':'/listings',form);
+      if(account.getUser()?.id!==submittingUser){refresh();return;}
+      message='listingSubmitted';$('listing-form').reset();$('listing-editor').close();
+      if(editingId){editingId=null;await loadManager();$('listing-manager-status').textContent=t('listingSubmitted');}
+      else $('listing-success').showModal();
+      refresh();
     }catch(error){message=['listingInvalid','listingPhotoError','listingActionFailed','authRateLimit'].includes(error.message)?error.message:'listingActionFailed';}
     finally{busy=false;$('listing-submit').disabled=false;translate();}
   };
   $('listing-create').onclick=openCreate;$('listing-mine').onclick=()=>openManager();$('listing-moderate').onclick=()=>openManager(true);
   $('listing-editor-close').onclick=()=>{if(!busy)$('listing-editor').close();};$('listing-manager-close').onclick=()=>$('listing-manager').close();
+  $('listing-editor').addEventListener('cancel',event=>{if(busy)event.preventDefault();});
+  $('listing-success-close').onclick=()=>$('listing-success').close();
+  $('listing-another').onclick=()=>{$('listing-success').close();openCreate();};
+  $('listing-return-home').onclick=()=>{
+    $('listing-success').close();
+    if(location.hash)history.replaceState(history.state,'',location.pathname+location.search);
+    $('listing-create').focus({preventScroll:true});window.scrollTo(0,0);
+  };
+  $('listing-success').addEventListener('close',()=>{if(!$('listing-editor').open)$('listing-create').focus({preventScroll:true});});
   $('listing-manager').addEventListener('close',revoke);
   let previousUser=account.getUser()?.id;
   document.addEventListener('accountchange',()=>{
     const current=account.getUser()?.id;
+    if(previousUser!==current)$('listing-success').close();
     if(previousUser!==current){previousUser=current;if(!current){$('listing-editor').close();$('listing-manager').close();managerRows=[];revoke();}}
     $('listing-moderate').hidden=!live||!account.getUser()?.admin;
   });
