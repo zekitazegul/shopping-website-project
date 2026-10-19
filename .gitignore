@@ -13,3 +13,4 @@ preview-*.png
 .server-data/
 .server-config.json
 backups/
+.https-test.json

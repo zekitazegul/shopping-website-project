@@ -56,7 +56,15 @@ NL: Het installatiecommando vraagt het appwachtwoord zonder het te tonen en hers
 
 ## Connecting the public website
 
-The current Nextcloud home server is documented for home-network access only. Do not point public visitors at `localhost` or a private LAN IP. No router forwarding, firewall exposure or public tunnel has been configured for this project.
+TR: Geçici HTTPS testi için `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/start-https-test.ps1 -Publish` kullanılır. Resmi Cloudflare Quick Tunnel konteyneri yalnızca pazaryeri sunucusunu dışarı açar. Hesap veya alan adı gerekmez; adres değişkendir ve çalışma garantisi yoktur. Docker/tünel yeniden başlatıldıktan sonra aynı komut yeni adresi GitHub'a aktarabilir. Durdurmak için `docker compose --profile https-test stop https-test` kullanılır. Bu komut geçici dış erişimi kapatır; yerel sunucu çalışmaya devam eder. Gerçek mobil veri testi ayrıca yapılmalıdır.
+
+EN: For temporary HTTPS testing, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/start-https-test.ps1 -Publish`. The official Cloudflare Quick Tunnel container exposes only the marketplace server. No account or domain is required; the hostname is temporary and uptime is not guaranteed. After a Docker/tunnel restart, the same command can publish the new address to GitHub. Stop with `docker compose --profile https-test stop https-test`; this closes temporary external access while leaving the local server running. A real cellular-device test is still needed.
+
+NL: Gebruik voor een tijdelijke HTTPS-test `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/start-https-test.ps1 -Publish`. De officiële Cloudflare Quick Tunnel-container maakt alleen de marktplaatsserver extern bereikbaar. Er is geen account of domein nodig; het adres is tijdelijk en er is geen beschikbaarheidsgarantie. Na herstart van Docker/de tunnel kan hetzelfde commando het nieuwe adres op GitHub publiceren. Stop met `docker compose --profile https-test stop https-test`; dit sluit tijdelijke externe toegang en laat de lokale server draaien. Een echte mobiele-datatest blijft nodig.
+
+Reference: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
+
+The Nextcloud service remains separate. Do not point public visitors at `localhost` or a private LAN IP. The optional tunnel uses outbound connections; no router forwarding or firewall port exposure is configured by this project.
 
 After an HTTPS endpoint is available for this home server:
 

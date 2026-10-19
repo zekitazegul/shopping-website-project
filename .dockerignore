@@ -8,6 +8,7 @@ build
 backups
 .server-data
 .server-config.json
+.https-test.json
 .env
 .env.*
 *.log

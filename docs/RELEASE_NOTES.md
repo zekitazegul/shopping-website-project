@@ -1,3 +1,11 @@
+# 2026-10-19 — Geçici HTTPS / Temporary HTTPS / Tijdelijke HTTPS
+
+TR: İsteğe bağlı resmi Cloudflare Quick Tunnel konteyneri ve adresi GitHub Pages'e bağlayan kurulum komutu eklendi. Geçici HTTPS adresi hesap veya alan adı satın almadan kullanılabilir; tünel yeniden oluşturulunca değişir. API erişimi, GitHub CORS izinleri, yetkisiz yönetici ve gizli dosya erişimlerinin reddi kontrol edildi. Gerçek mobil veri testi kullanıcı tarafından yapılmalıdır.
+
+EN: Added an optional official Cloudflare Quick Tunnel container and a setup command to connect its address to GitHub Pages. The temporary HTTPS address requires no account or domain purchase and changes when the tunnel is recreated. Checked API access, GitHub CORS permissions, and rejection of anonymous admin/private-file access. Actual cellular-device testing remains for the user.
+
+NL: Een optionele officiële Cloudflare Quick Tunnel-container en een installatiecommando koppelen het adres aan GitHub Pages. Het tijdelijke HTTPS-adres vereist geen account of domeinaankoop en verandert bij opnieuw aanmaken van de tunnel. API-toegang, GitHub CORS-rechten en het weigeren van anonieme beheertoegang/privébestanden zijn gecontroleerd. Een echte mobiele-datatest blijft voor de gebruiker.
+
 # 2026-10-19 — İstek sınırı / Request limits / Verzoeklimieten
 
 TR: Erken tekrarlar ve başarısız SMTP gönderimleri artık e-posta kodu kotasını tüketmez. Güvenlik sınırları korunur. Sunucu bekleme süresini bildirir; dokuz dilde geri sayım görünür ve bu sürede tekrar gönderim engellenir.
