@@ -7,18 +7,20 @@ export function createAuth(config,{fetcher=globalThis.fetch,storage=globalThis.s
   try{session=JSON.parse(storage?.getItem('shopping.home.auth')||'null');}catch{}
   function clear(){session=null;try{storage?.removeItem('shopping.home.auth');}catch{}}
   function remember(value){session=value;try{storage?.setItem('shopping.home.auth',JSON.stringify(value));}catch{}}
-  async function request(path,{body,token}={}){
+  async function request(path,{body,token,raw=false}={}){
     if(!configured)throw new Error('authUnavailable');
     let response;
-    try{response=await fetcher(config.url+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000)});}
+    const multipart=typeof FormData!=='undefined' && body instanceof FormData;
+    try{response=await fetcher(config.url+path,{method:body?'POST':'GET',headers:{...(!multipart?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:multipart?body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000)});}
     catch{throw new Error('authNetwork');}
     if(!response.ok){
       if(response.status===401)clear();
       const error=new Error(response.status===429?'authRateLimit':response.status===403?'authAdminDenied':response.status===503?'authUnavailable':'authInvalid');
+      try{const payload=await response.json();if(['listingInvalid','listingPhotoError','listingActionFailed'].includes(payload.error))error.message=payload.error;}catch{}
       if(response.status===429)error.retryAfter=Math.max(1,Number(response.headers?.get('Retry-After'))||60);
       throw error;
     }
-    return response.json();
+    return raw?response.blob():response.json();
   }
   function token(){if(!session?.token || !Number.isFinite(session.expiresAt) || session.expiresAt<=now()){clear();return null;}return session.token;}
   async function access(){
@@ -36,6 +38,8 @@ export function createAuth(config,{fetcher=globalThis.fetch,storage=globalThis.s
       remember({token:data.token,expiresAt:data.expiresAt});return access();
     },
     access,
+    async api(path,body){return request(path,{body,token:token()});},
+    async photo(id){return request('/photos/'+id,{token:token(),raw:true});},
     async adminStats(){const user=await access();if(!user?.admin)throw new Error('authAdminDenied');return request('/admin/stats',{token:token()});},
     async signOut(){const value=token();clear();if(value)try{await request('/logout',{body:{},token:value});}catch{}}
   };

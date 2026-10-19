@@ -30,6 +30,12 @@ NL: Supabase is verwijderd uit het accountsysteem. De Node.js + SQLite-server dr
 
 ## Yayınlama / Publishing / Publicatie
 
+TR: Gerçek ilan oluşturma, fotoğraf yükleme ve yönetici incelemesi ev sunucusunun HTTPS adresindedir. Yerelde `http://127.0.0.1:4180` kullanılır. Yeni ilanlar onaya kadar gizlidir. GitHub Pages örnek ilanlı demo olarak kalır ve ev sunucusundaki pazaryerine bağlantı verir. İlan metinleri kullanıcı tarafından yazıldığı dilde gösterilir.
+
+EN: Real listing creation, photo uploads and moderation run at the home server's HTTPS address, or locally at `http://127.0.0.1:4180`. New listings remain private until approved. GitHub Pages stays a sample-listing demo linking to the home-hosted marketplace. User-written listing text retains its original language.
+
+NL: Echte advertenties, foto-uploads en moderatie draaien op het HTTPS-adres van de thuisserver, of lokaal op `http://127.0.0.1:4180`. Nieuwe advertenties blijven privé tot goedkeuring. GitHub Pages blijft een demo met voorbeeldadvertenties en een koppeling naar de thuis gehoste marktplaats. Advertentietekst behoudt de oorspronkelijke taal.
+
 TR: GitHub Pages, `main` dalına gönderilen güncellemeleri test edip `dist/` çıktısını yayınlar. Yayın adresi: https://zekitazegul.github.io/shopping-website-project/ . GitHub Pages yalnızca demo için kullanılır; gerçek ticari işlemler için uygun barındırmaya geçilmelidir. İleride bir `.com` alan adı değerlendirilebilir; şu anda satın alınmaz.
 
 EN: GitHub Pages tests updates pushed to `main` and publishes the `dist/` output. Site URL: https://zekitazegul.github.io/shopping-website-project/ . GitHub Pages is used for the demo only; real commercial transactions require suitable hosting. A `.com` domain may be considered later; none is purchased now.

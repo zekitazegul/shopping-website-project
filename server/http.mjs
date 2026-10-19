@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {AuthError} from './accounts.mjs';
+import {Listings} from './listings.mjs';
 
 async function jsonBody(req){
   if(!req.headers['content-type']?.startsWith('application/json'))throw new AuthError(415,'authInvalid');
@@ -10,6 +11,7 @@ async function jsonBody(req){
   try{const data=JSON.parse(Buffer.concat(chunks).toString('utf8'));if(!data || typeof data!=='object' || Array.isArray(data))throw Error();return data;}catch{throw new AuthError(400,'authInvalid');}
 }
 export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0.0.1','localhost']}){
+  const listings=new Listings(accounts);
   const allowedOrigins=new Set(origins);
   const server=createServer(async(req,res)=>{
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
@@ -26,6 +28,27 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       }
       const token=req.headers.authorization?.replace(/^Bearer /,'');
       const ip=req.socket.remoteAddress||'unknown'; // Never trust forwarded IP headers from arbitrary clients.
+      if(path.startsWith('/api/listings')||path.startsWith('/api/my/listings')||path.startsWith('/api/admin/listings')||path.startsWith('/api/photos')){
+        if(origin==='https://zekitazegul.github.io')throw new AuthError(403,'listingActionFailed');
+        if(path==='/api/listings' && req.method==='GET')return json(200,listings.publicList());
+        if(path==='/api/my/listings' && req.method==='GET')return json(200,listings.mine(token));
+        if(path==='/api/admin/listings' && req.method==='GET')return json(200,listings.review(token));
+        if(path==='/api/listings' && req.method==='POST'){
+          accounts.requireVerified(token);
+          const type=req.headers['content-type']||'';
+          if(!type.startsWith('multipart/form-data;'))throw new AuthError(415,'listingInvalid');
+          let size=0;const chunks=[];
+          for await(const chunk of req){size+=chunk.length;if(size>13*1024*1024)throw new AuthError(413,'listingPhotoError');chunks.push(chunk);}
+          let form;try{form=await new Response(Buffer.concat(chunks),{headers:{'Content-Type':type}}).formData();}catch{throw new AuthError(400,'listingInvalid');}
+          return json(201,await listings.create(token,form));
+        }
+        const approve=path.match(/^\/api\/admin\/listings\/([a-f0-9-]{36})\/approve$/);
+        if(approve && req.method==='POST')return json(200,listings.approve(token,approve[1]));
+        const remove=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/remove$/);
+        if(remove && req.method==='POST')return json(200,listings.remove(token,remove[1]));
+        const photo=path.match(/^\/api\/photos\/([a-f0-9-]{36})$/);
+        if(photo && req.method==='GET'){const data=listings.photo(photo[1],token);res.writeHead(200,{'Content-Type':'image/jpeg','Content-Length':data.length});return res.end(Buffer.from(data));}
+      }
       if(path==='/health' && req.method==='GET')return json(200,{ok:true});
       if(path==='/api/status' && req.method==='GET')return json(200,{ready:mailReady});
       if(path==='/api/session' && req.method==='GET')return json(200,{user:accounts.requireVerified(token)});
@@ -49,6 +72,6 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript; charset=utf-8':path.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(data);
     }catch(error){if(error instanceof AuthError && error.retryAfter)res.setHeader('Retry-After',String(error.retryAfter));json(error instanceof AuthError?error.status:500,{error:error instanceof AuthError?error.message:'authUnavailable'});}
   });
-  server.requestTimeout=15000;server.headersTimeout=10000;
+  server.requestTimeout=60000;server.headersTimeout=10000;
   return server;
 }

@@ -12,5 +12,5 @@ export const items = [
 for(const [locale,titles] of Object.entries(additionalTitles))for(const [index,item] of items.entries())item.title[locale]=titles[index];
 export function selectItems(source,state,locale){
 const q=state.query.trim().toLocaleLowerCase(locale);
-return source.filter(i=>(!q||(i.title[locale]+' '+i.city).toLocaleLowerCase(locale).includes(q))&&(!state.category||i.kind===state.category)&&(!state.country||i.country===state.country)&&(!state.condition||i.condition===state.condition)&&(state.min===''||i.price>=Number(state.min))&&(state.max===''||i.price<=Number(state.max))&&(!state.favoritesOnly||state.favorites.includes(i.id))).sort((a,b)=>state.sort==='low'?a.price-b.price:state.sort==='high'?b.price-a.price:b.id-a.id);
+return source.filter(i=>(!q||(i.title[locale]+' '+i.city).toLocaleLowerCase(locale).includes(q))&&(!state.category||i.kind===state.category)&&(!state.country||i.country===state.country)&&(!state.condition||i.condition===state.condition)&&(state.min===''||i.price>=Number(state.min))&&(state.max===''||i.price<=Number(state.max))&&(!state.favoritesOnly||state.favorites.includes(i.id))).sort((a,b)=>state.sort==='low'?a.price-b.price:state.sort==='high'?b.price-a.price:(b.createdAt||b.id)-(a.createdAt||a.id));
 }

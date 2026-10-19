@@ -52,7 +52,7 @@ NL: Het installatiecommando vraagt het appwachtwoord zonder het te tonen en hers
 - Only the server-selected email receives the initial admin role after code verification. Client-supplied roles, browser storage and query parameters cannot grant permissions.
 - Sessions expire after 24 hours and are revoked server-side on logout. Session tokens are stored as keyed hashes in SQLite and as bearer tokens only in the current browser tab's session storage. Codes are never returned through the API or printed in logs.
 - API responses reject unapproved browser origins; private configuration, database, source-server files and backups are never served. Only TLS SMTP is supported. Missing SMTP settings disable signup rather than simulate delivery.
-- Actual buying, selling, seller contact and payment APIs are not implemented. Future transaction handlers must call `accounts.requireVerified(token)` and enforce ownership rules on the server. The current demo does not perform commercial transactions.
+- Listing creation requires `accounts.requireVerified(token)` and creates a pending record. Only admins can approve; owners or admins can remove. Pending images require an owner/admin token. Photos are sanitized JPEG blobs in the account database and are included in online backups. Public catalog responses omit seller email/account IDs. The GitHub origin is excluded from listing/photo API calls; actual listings are served by the home-hosted website. Seller contact, payments and shipping are not implemented.
 
 ## Connecting the public website
 

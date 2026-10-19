@@ -26,6 +26,7 @@ export function setupAuth(t) {
     const remaining=Math.max(0,Math.ceil((retryUntil-Date.now())/1000));
     $('auth-status').textContent=remaining && !busy?t('authRetryAfter').replace('{seconds}',String(remaining)):t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
     for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy || (remaining>0 && button.type==='submit');
+    document.dispatchEvent(new CustomEvent('accountchange',{detail:{user}}));
   }
   async function perform(work) {
     if(busy)return;revision++;busy=true;message='';render();
@@ -72,5 +73,5 @@ export function setupAuth(t) {
   setInterval(()=>{if(retryUntil){if(Date.now()>=retryUntil){retryUntil=0;if(message==='authRateLimit')message='';}render();}},1000);
   render();
   if(auth.configured)perform(async()=>{user=await auth.access();});
-  return {translate:render};
+  return {translate:render,auth,open,getUser:()=>user};
 }
