@@ -6,6 +6,7 @@ export function setupAuth(t) {
   const $=id=>document.getElementById(id);
   let user=null, email='', codeSent=false, busy=false, message='', adminIntent=false, stats=null;
   let revision=0;
+  let retryUntil=0;
   function render() {
     $('account-button').textContent=t(user?'authAccount':'authSignIn');
     $('account-button').dataset.signedIn=String(!!user);
@@ -22,12 +23,13 @@ export function setupAuth(t) {
     $('auth-admin-panel').hidden=!user?.admin || !stats;
     $('auth-total').textContent=String(stats?.accounts ?? '');
     $('auth-verified').textContent=String(stats?.verified ?? '');
-    $('auth-status').textContent=t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
-    for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy;
+    const remaining=Math.max(0,Math.ceil((retryUntil-Date.now())/1000));
+    $('auth-status').textContent=remaining && !busy?t('authRetryAfter').replace('{seconds}',String(remaining)):t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
+    for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy || (remaining>0 && button.type==='submit');
   }
   async function perform(work) {
     if(busy)return;revision++;busy=true;message='';render();
-    try{await work();}catch(error){if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied'].includes(error.message)?error.message:'authInvalid';}
+    try{await work();}catch(error){if(error.message==='authRateLimit')retryUntil=Date.now()+(error.retryAfter||60)*1000;if(['authInvalid','authNetwork','authUnavailable'].includes(error.message)){user=null;stats=null;}message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied'].includes(error.message)?error.message:'authInvalid';}
     finally{busy=false;render();}
   }
   async function open(admin=false) {
@@ -67,6 +69,7 @@ export function setupAuth(t) {
   window.addEventListener('focus',refreshSession);
   document.addEventListener('visibilitychange',refreshSession);
   setInterval(()=>{if(user)refreshSession();},60000);
+  setInterval(()=>{if(retryUntil){if(Date.now()>=retryUntil){retryUntil=0;if(message==='authRateLimit')message='';}render();}},1000);
   render();
   if(auth.configured)perform(async()=>{user=await auth.access();});
   return {translate:render};

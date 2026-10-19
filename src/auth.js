@@ -14,7 +14,9 @@ export function createAuth(config,{fetcher=globalThis.fetch,storage=globalThis.s
     catch{throw new Error('authNetwork');}
     if(!response.ok){
       if(response.status===401)clear();
-      throw new Error(response.status===429?'authRateLimit':response.status===403?'authAdminDenied':response.status===503?'authUnavailable':'authInvalid');
+      const error=new Error(response.status===429?'authRateLimit':response.status===403?'authAdminDenied':response.status===503?'authUnavailable':'authInvalid');
+      if(response.status===429)error.retryAfter=Math.max(1,Number(response.headers?.get('Retry-After'))||60);
+      throw error;
     }
     return response.json();
   }

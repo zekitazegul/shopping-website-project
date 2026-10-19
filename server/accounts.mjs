@@ -2,7 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHmac, randomInt, randomBytes, randomUUID, timingSafeEqual} from 'node:crypto';
 
 export class AuthError extends Error {
-  constructor(status,key){super(key);this.status=status;}
+  constructor(status,key,retryAfter){super(key);this.status=status;this.retryAfter=retryAfter;}
 }
 export function normalizeEmail(value){
   const email=typeof value==='string'?value.trim().toLowerCase():'';
@@ -23,19 +23,23 @@ export class Accounts {
   prune(){const now=this.now();for(const table of ['sessions','limits'])this.db.prepare(`DELETE FROM ${table} WHERE expires <= ?`).run(now);this.db.prepare('DELETE FROM challenges WHERE expires < ?').run(now-86400000);}
   limit(kind,value,max,window){
     const now=this.now(),bucket=this.hash(`${kind}:${value}:${Math.floor(now/window)}`);
-    this.db.prepare('INSERT INTO limits(bucket,count,expires) VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET count=count+1').run(bucket,now+window);
-    if(this.db.prepare('SELECT count FROM limits WHERE bucket=?').get(bucket).count>max)throw new AuthError(429,'authRateLimit');
+    const expires=(Math.floor(now/window)+1)*window;
+    const previous=this.db.prepare('SELECT count FROM limits WHERE bucket=?').get(bucket);
+    if(previous?.count>=max)throw new AuthError(429,'authRateLimit',Math.max(1,Math.ceil((expires-now)/1000)));
+    this.db.prepare('INSERT INTO limits(bucket,count,expires) VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET count=count+1,expires=excluded.expires').run(bucket,expires);
+    return bucket;
   }
   async sendCode(value,ip,locale='en'){
     const email=normalizeEmail(value);this.prune();
-    this.limit('send-ip',ip,30,3600000);this.limit('send-email',email,6,3600000);
+    this.limit('send-ip',ip,30,3600000);
     const previous=this.db.prepare('SELECT sent FROM challenges WHERE email=?').get(email);
-    if(previous && previous.sent+60000>this.now())throw new AuthError(429,'authRateLimit');
+    if(previous && previous.sent+60000>this.now())throw new AuthError(429,'authRateLimit',Math.ceil((previous.sent+60000-this.now())/1000));
+    const emailBucket=this.limit('send-email',email,6,3600000);
     const code=String(randomInt(0,1000000)).padStart(6,'0'),nonce=randomBytes(16).toString('hex');
     const digest=this.hash(`${email}:${nonce}:${code}`),now=this.now();
     this.db.prepare('INSERT INTO challenges(email,nonce,digest,expires,attempts,sent) VALUES(?,?,?,?,0,?) ON CONFLICT(email) DO UPDATE SET nonce=excluded.nonce,digest=excluded.digest,expires=excluded.expires,attempts=0,sent=excluded.sent').run(email,nonce,digest,now+600000,now);
     try{await this.sendMail({email,code,locale});}
-    catch{this.db.prepare('DELETE FROM challenges WHERE email=? AND nonce=?').run(email,nonce);throw new AuthError(503,'authUnavailable');}
+    catch{this.db.prepare('DELETE FROM challenges WHERE email=? AND nonce=?').run(email,nonce);this.db.prepare('UPDATE limits SET count=max(0,count-1) WHERE bucket=?').run(emailBucket);throw new AuthError(503,'authUnavailable');}
   }
   verifyCode(value,code,ip){
     const email=normalizeEmail(value);this.limit('verify-ip',ip,60,600000);

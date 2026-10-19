@@ -9,7 +9,7 @@ import {createApp} from '../server/http.mjs';
 import {createAuth,validAuthConfig} from '../src/auth.js';
 const root=resolve(import.meta.dirname,'..');
 function setup(t,{sendFailure=false}={}){
-  let time=Date.now();const mail=[];
+  let time=Date.UTC(2026,9,19,12,10,0);const mail=[];
   const accounts=new Accounts({filename:':memory:',secret:'test-secret-'.repeat(4),adminEmail:'owner@example.test',now:()=>time,sendMail:async value=>{if(sendFailure)throw Error('private SMTP error');mail.push(value);}});
   t.after(()=>accounts.close());
   return {accounts,mail,advance:ms=>{time+=ms;},now:()=>time};
@@ -48,6 +48,20 @@ test('resend cooldown, replacement codes, attempt cap and expiry are enforced on
 test('failed email delivery never yields a usable challenge',async t=>{
   const {accounts}=setup(t,{sendFailure:true});await assert.rejects(accounts.sendCode('person@example.test','ip'),/authUnavailable/);
   assert.equal(accounts.db.prepare('SELECT count(*) n FROM challenges').get().n,0);
+  assert.equal(accounts.db.prepare('SELECT count FROM limits WHERE bucket=?').get(accounts.hash(`send-email:person@example.test:${Math.floor(accounts.now()/3600000)}`)).count,0);
+});
+test('cooldown retries do not consume email quota and return an accurate wait time',async t=>{
+  const {accounts,advance}=setup(t);await accounts.sendCode('person@example.test','ip');
+  advance(10000);
+  for(let i=0;i<8;i++)await assert.rejects(accounts.sendCode('person@example.test','ip'),error=>error.status===429 && error.retryAfter===50);
+  const bucket=accounts.hash(`send-email:person@example.test:${Math.floor(accounts.now()/3600000)}`);
+  assert.equal(accounts.db.prepare('SELECT count FROM limits WHERE bucket=?').get(bucket).count,1);
+  advance(51000);await accounts.sendCode('person@example.test','ip');
+});
+test('HTTP rate limit carries Retry-After for the browser countdown',async t=>{
+  const {call}=await api(t);await call('/api/send-code',{body:{email:'person@example.test'}});
+  const response=await call('/api/send-code',{body:{email:'person@example.test'}});
+  assert.equal(response.status,429);assert.equal(response.headers.get('Retry-After'),'60');
 });
 test('only the configured verified administrator can access stats; sessions expire',async t=>{
   const {accounts,mail,advance}=setup(t);await accounts.sendCode('person@example.test','ip');

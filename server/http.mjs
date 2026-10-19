@@ -47,7 +47,7 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
       const file=resolve(root,path==='/'?'index.html':path.slice(1));
       const data=await readFile(file);
       res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript; charset=utf-8':path.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8'});res.end(data);
-    }catch(error){json(error instanceof AuthError?error.status:500,{error:error instanceof AuthError?error.message:'authUnavailable'});}
+    }catch(error){if(error instanceof AuthError && error.retryAfter)res.setHeader('Retry-After',String(error.retryAfter));json(error instanceof AuthError?error.status:500,{error:error instanceof AuthError?error.message:'authUnavailable'});}
   });
   server.requestTimeout=15000;server.headersTimeout=10000;
   return server;

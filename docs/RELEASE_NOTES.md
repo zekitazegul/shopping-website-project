@@ -1,3 +1,11 @@
+# 2026-10-19 — İstek sınırı / Request limits / Verzoeklimieten
+
+TR: Erken tekrarlar ve başarısız SMTP gönderimleri artık e-posta kodu kotasını tüketmez. Güvenlik sınırları korunur. Sunucu bekleme süresini bildirir; dokuz dilde geri sayım görünür ve bu sürede tekrar gönderim engellenir.
+
+EN: Early retries and failed SMTP deliveries no longer consume the email-code quota. Security limits remain enforced. The server returns the wait time; a countdown appears in all nine languages and prevents repeated submission while waiting.
+
+NL: Te vroege herhalingen en mislukte SMTP-verzendingen verbruiken het e-mailcodequotum niet meer. Beveiligingslimieten blijven actief. De server geeft de wachttijd door; een aftelling in alle negen talen voorkomt herhaalde verzending tijdens het wachten.
+
 # 2026-10-19 — Oturum göstergesi / Session indicator / Sessiestatus
 
 TR: Giriş sonrası sayfanın üstünde yeşil durum bandı, hesap e-postası, yönetici rozeti, yönetici paneli bağlantısı ve çıkış düğmesi gösterilir. Durum sayfa yenilemede sunucudan doğrulanır, çıkışta temizlenir ve sekmeye dönüldüğünde yeniden kontrol edilir. Dokuz dil ve mobil/masaüstü düzenleri güncellendi.

@@ -19,19 +19,23 @@ try {
   }
   await page.locator('#auth-close').click();
   await page.route('**/src/auth-config.js',route=>route.fulfill({contentType:'text/javascript',body:"export const authConfig={url:'https://home.example.test/api'};"}));
-  let admin=false;
+  let admin=false,rateLimited=true;
   await page.route('https://home.example.test/api/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname;
     const body=request.postDataJSON();let data={},status=200;
+    if(path.endsWith('/send-code') && request.method()==='POST' && rateLimited){status=429;rateLimited=false;}
     if(path.endsWith('/verify-code')){
       if(body.code==='000000')status=400;
       else data={token:'test-only-token',expiresAt:Date.now()+3600000};
     }else if(path.endsWith('/session'))data={user:{id:'test-user',email:'person@example.test',admin}};
     else if(path.endsWith('/admin/stats'))data={accounts:5,verified:4};
-    await route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'},body:JSON.stringify(data)});
+    await route.fulfill({status,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Expose-Headers':'Retry-After','Retry-After':'2'},body:JSON.stringify(data)});
   });
   await page.reload();await page.selectOption('#language','en');
   await page.locator('#account-button').click();await page.fill('#auth-email','person@example.test');await page.locator('#auth-email-form button').click();
+  await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Wait'));
+  ensure(await page.locator('#auth-email-form button').isDisabled(),'Rate limit did not disable repeated submission');
+  await page.waitForFunction(()=>!document.querySelector('#auth-email-form button').disabled);await page.locator('#auth-email-form button').click();
   await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code','000000');await page.locator('#auth-code-form button[type=submit]').click();
   await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Unable'));
