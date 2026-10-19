@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 import {AuthError} from './accounts.mjs';
+import {conditions} from '../src/conditions.js';
 
 const kinds=['home','fashion','electronics','bikes','leisure'];
 export class Listings {
@@ -26,11 +27,11 @@ export class Listings {
   review(token){if(!this.accounts.requireVerified(token).admin)throw new AuthError(403,'authAdminDenied');return this.rows();}
   async create(token,form,id=null){
     const user=this.accounts.requireVerified(token);
-    if(id)this.editable(user,id);
+    const original=id?this.editable(user,id):null;
     const field=(key,min,max)=>{const value=form.get(key);if(typeof value!=='string'||value.trim().length<min||value.trim().length>max)throw new AuthError(400,'listingInvalid');return value.trim();};
     const title=field('title',3,120),description=field('description',20,3000),city=field('city',2,100);
     const price=field('price',1,12),kind=field('kind',1,30),country=field('country',2,2),condition=field('condition',1,20);
-    if(!/^\d{1,6}(\.\d{1,2})?$/.test(price)||Number(price)<=0||!kinds.includes(kind)||!['NL','BE','DE'].includes(country)||!['new','likeNew','good'].includes(condition))throw new AuthError(400,'listingInvalid');
+    if(!/^\d{1,6}(\.\d{1,2})?$/.test(price)||Number(price)<=0||!kinds.includes(kind)||!['NL','BE','DE'].includes(country)||(!conditions.includes(condition)&&!(condition==='new'&&original?.item_condition==='new')))throw new AuthError(400,'listingInvalid');
     const files=form.getAll('photos');if((!id&&files.length<1)||files.length>4)throw new AuthError(400,'listingPhotoError');
     this.accounts.limit(id?'edit-listing':'create-listing',user.id,20,86400000);
     const photos=[];
@@ -58,7 +59,7 @@ export class Listings {
     return this.rows('WHERE id=?',[id])[0];
   }
   editable(user,id){
-    const listing=this.db.prepare('SELECT owner_id,status,sold_at FROM listings WHERE id=?').get(id);
+    const listing=this.db.prepare('SELECT owner_id,status,sold_at,item_condition FROM listings WHERE id=?').get(id);
     if(!listing||listing.owner_id!==user.id||listing.status==='removed'||listing.sold_at!==null)throw new AuthError(409,'listingActionFailed');
     return listing;
   }

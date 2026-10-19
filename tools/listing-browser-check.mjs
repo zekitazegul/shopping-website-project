@@ -30,6 +30,7 @@ try{
   }
   await seller.evaluate(()=>{const select=document.getElementById('language');select.value='en';select.dispatchEvent(new Event('change'));});
   await seller.fill('#listing-title','Handmade chair <script>');await seller.fill('#listing-description','A well-kept chair ready for a new home.');await seller.fill('#listing-price','42.50');await seller.fill('#listing-city','Antwerpen');await seller.selectOption('#listing-country','BE');
+  ensure(await seller.locator('#listing-condition option').count()===5,'Missing condition options');await seller.selectOption('#listing-condition','openBox');
   const image=await sharp({create:{width:100,height:80,channels:3,background:'#335577'}}).png().toBuffer();
   await seller.locator('#listing-photos').setInputFiles({name:'chair.png',mimeType:'image/png',buffer:image});await seller.locator('#listing-submit').click();
   await seller.waitForFunction(()=>document.getElementById('listing-message').textContent.includes('submitted'));
@@ -43,6 +44,7 @@ try{
   await visitor.selectOption('#language','tr');ensure(await visitor.locator('#country').inputValue()==='BE','Language changed physical country');
   await seller.locator('#listing-manager-close').click();await seller.locator('#listing-mine').click();await seller.getByRole('button',{name:'Edit',exact:true}).click();
   ensure(await seller.locator('#listing-title').inputValue()==='Handmade chair <script>','Edit not prefilled');
+  ensure(await seller.locator('#listing-condition').inputValue()==='openBox','Edit lost item condition');await seller.selectOption('#listing-condition','brandNew');
   await seller.fill('#listing-title','Updated chair');await seller.locator('#listing-submit').click();
   await seller.waitForFunction(()=>!document.getElementById('listing-editor').open);await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Awaiting review'));
   await seller.waitForFunction(()=>document.querySelector('.managed-listing img')?.naturalWidth>0);
@@ -62,6 +64,7 @@ try{
   await visitor.reload();await visitor.waitForFunction(()=>document.querySelectorAll('.card').length===0);
   await admin.locator('#listing-moderate').click();await admin.getByRole('button',{name:'Approve',exact:true}).click();await admin.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Published'));await admin.locator('#listing-manager-close').click();
   await visitor.reload();await visitor.selectOption('#country','BE');await visitor.waitForSelector('.card');ensure(await visitor.locator('.card h3').textContent()==='Updated chair','Relisted item missing');
+  await visitor.selectOption('#language','en');await visitor.selectOption('#condition','openBox');ensure(await visitor.locator('.card').count()===0,'Condition filter mixed open box and brand new');await visitor.selectOption('#condition','brandNew');ensure(await visitor.locator('.card').count()===1,'Brand new item not found');
   await admin.locator('#listing-moderate').click();await admin.locator('.managed-listing .text-button').click();await admin.waitForFunction(()=>document.querySelectorAll('.managed-listing button').length===0);
   await visitor.reload();await visitor.waitForFunction(()=>document.querySelectorAll('.card').length===0);ensure(!errors.length,errors.join('\n'));
   console.log('PASS '+engine+': create, photo, review, owner edit, sold, relist/review with retained photo, removal, public browsing, 72 localized form/manager viewports. No real email sent.');

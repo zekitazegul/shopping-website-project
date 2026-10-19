@@ -5,7 +5,7 @@ export const items = [
 {id:3,kind:'electronics',icon:'📷',color:'#e6e3e9',price:120,country:'BE',city:'Antwerpen',condition:'good',title:{nl:'Analoge camera, tijdloze beelden',en:'Film camera, timeless memories',tr:'Analog fotoğraf makinesi'}},
 {id:4,kind:'bikes',icon:'🚲',color:'#e1e9e7',price:165,country:'NL',city:'Rotterdam',condition:'good',title:{nl:'Klaar voor de stad',en:'Ready for the city',tr:'Şehir turuna hazır bisiklet'}},
 {id:5,kind:'home',icon:'💡',color:'#eee5d5',price:24,country:'DE',city:'Köln',condition:'likeNew',title:{nl:'Een warm lichtpuntje',en:'A little warmth for your room',tr:'Odana sıcaklık katan lamba'}},
-{id:6,kind:'fashion',icon:'👟',color:'#e5e9ee',price:55,country:'NL',city:'Den Haag',condition:'new',title:{nl:'Frisse sneakers voor elke dag',en:'Fresh sneakers for every day',tr:'Her güne uygun spor ayakkabı'}},
+{id:6,kind:'fashion',icon:'👟',color:'#e5e9ee',price:55,country:'NL',city:'Den Haag',condition:'brandNew',title:{nl:'Frisse sneakers voor elke dag',en:'Fresh sneakers for every day',tr:'Her güne uygun spor ayakkabı'}},
 {id:7,kind:'leisure',icon:'🎸',color:'#eaded5',price:85,country:'NL',city:'Eindhoven',condition:'good',title:{nl:'Ruimte voor een nieuwe hobby',en:'Make room for a new hobby',tr:'Yeni bir hobiye yer aç'}},
 {id:8,kind:'leisure',icon:'🎒',color:'#e1e6dc',price:32,country:'BE',city:'Gent',condition:'likeNew',title:{nl:'Voor je volgende avontuur',en:'For your next adventure',tr:'Bir sonraki maceran için'}}
 ];

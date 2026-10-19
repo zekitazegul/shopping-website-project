@@ -1,11 +1,12 @@
 import {authConfig} from './auth-config.js';
+import {conditions} from './conditions.js';
 
 const languages=['tr','en','nl','de','fr','it','es','pl','pt'];
 export function setupListingUI(t,account,onCatalog){
   const $=id=>document.getElementById(id),api=account.auth;
   const live=authConfig.url==='/api';
   const marketUrl=authConfig.url.startsWith('https:')?authConfig.url.slice(0,-4)+'/':'';
-  let editingId=null,busy=false,message='',mode='mine',managerRows=[],objectUrls=[],version=0,catalogRevision=0;
+  let editingId=null,legacyCondition=false,busy=false,message='',mode='mine',managerRows=[],objectUrls=[],version=0,catalogRevision=0;
   const make=(tag,value,css)=>{const el=document.createElement(tag);if(value)el.textContent=value;if(css)el.className=css;return el;};
   function options(id,values){const selected=$(id).value;$(id).replaceChildren(...values.map(([value,key])=>{const option=make('option',t(key));option.value=value;return option;}));if(values.some(([value])=>value===selected))$(id).value=selected;}
   function translate(){
@@ -16,7 +17,7 @@ export function setupListingUI(t,account,onCatalog){
     if(marketUrl)$('listing-market-link').href=marketUrl;
     options('listing-kind',[['home','home'],['fashion','fashion'],['electronics','electronics'],['bikes','bikes'],['leisure','leisure']]);
     options('listing-country',[['NL','NL'],['BE','BE'],['DE','DE']]);
-    options('listing-condition',[['good','good'],['likeNew','likeNew'],['new','new']]);
+    options('listing-condition',[...conditions,...(legacyCondition?['new']:[])].map(value=>[value,value]));
     $('listing-editor-title').textContent=t(editingId?'listingEdit':'listingCreate');
     $('listing-edit-help').hidden=!editingId;
     $('listing-photo-help').textContent=t(editingId?'listingEditPhotos':'listingPhotoHelp');
@@ -34,10 +35,10 @@ export function setupListingUI(t,account,onCatalog){
   async function signedIn(){if(await api.access())return true;await account.open();return false;}
   async function openCreate(){
     if(!live || !await signedIn())return;
-    editingId=null;$('listing-form').reset();message='';translate();$('listing-editor').showModal();
+    editingId=null;legacyCondition=false;$('listing-form').reset();message='';translate();$('listing-condition').value='good';$('listing-editor').showModal();
   }
   function openEdit(row){
-    if(busy)return;editingId=row.id;message='';$('listing-form').reset();
+    if(busy)return;editingId=row.id;legacyCondition=row.condition==='new';message='';$('listing-form').reset();translate();
     for(const key of ['title','description','price','kind','country','city','condition'])$('listing-form').elements.namedItem(key).value=row[key];
     translate();$('listing-editor').showModal();
   }

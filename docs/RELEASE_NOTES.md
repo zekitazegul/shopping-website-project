@@ -99,6 +99,10 @@ Eerste lokale prototype: drie talen, landfilter op artikellocatie, zoeken, categ
 
 ## Passwords and remembered sessions / Wachtwoorden en onthouden sessies / Parola ve hatırlanan oturum
 
+- TR: Ürün durumu filtresi ve ilan formu artık Kullanılmış, İyi, Çok iyi, Yeni ama kutusu açılmış ve Yeni ve kutusunda seçeneklerini içerir. Eski “Yeni” ilanlarına kutu durumu atanmadan mevcut bilgi korunur; sahibi düzenlerken yeni seçeneklerden birini seçebilir.
+- EN: Condition filters and listing forms now offer Used, Good, Very good, New/open box, and Brand new/in box. Legacy “New” listings retain their unspecified packaging until the owner selects a new condition.
+- NL: Filters en advertentieformulieren bieden nu Gebruikt, Goed, Zeer goed, Nieuw/doos geopend en Gloednieuw in doos. Bij bestaande advertenties met “Nieuw” wordt geen verpakkingsstatus aangenomen; de eigenaar kan die bij bewerken kiezen.
+
 - TR: Parola veya e-posta koduyla başarılı girişten sonra giriş penceresi kapanır, ana sayfanın üstüne dönülür ve “Giriş yapıldı” bildirimi gösterilir. Hatalı girişte pencere açık kalır. Hesap ayarları ve yönetici paneli ilgili düğmelerden tekrar açılabilir.
 - EN: Successful password or email-code login closes the dialog, returns to the top of the homepage and shows a signed-in notification. Failed login keeps the dialog open. Account settings and administrator tools remain available through their buttons.
 - NL: Na inloggen met wachtwoord of e-mailcode sluit het venster, ga je naar de bovenkant van de hoofdpagina en verschijnt een melding. Bij een mislukte aanmelding blijft het venster open. Accountinstellingen en beheer blijven via hun knoppen beschikbaar.

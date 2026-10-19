@@ -10,6 +10,7 @@ import {tmpdir} from 'node:os';
 import {backup} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
 import {Messaging} from '../server/messaging.mjs';
+import {conditions} from '../src/conditions.js';
 
 async function setup(t){
   let mail;const accounts=new Accounts({filename:':memory:',secret:'listing-test-secret-'.repeat(3),adminEmail:'owner@example.test',sendMail:async value=>{mail=value;}});
@@ -22,6 +23,15 @@ async function setup(t){
   }
   return {accounts,listings,tokens,image,form};
 }
+test('all five conditions can be submitted and edited without inferring packaging for legacy new items',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);
+  for(const condition of conditions){const data=form();data.set('condition',condition);const row=await listings.create(tokens.seller,data);assert.equal(row.condition,condition);listings.approve(tokens.owner,row.id);assert.equal(listings.publicList().find(item=>item.id===row.id).condition,condition);}
+  const row=listings.mine(tokens.seller)[0];const edit=form();edit.delete('photos');edit.set('condition','openBox');assert.equal((await listings.create(tokens.seller,edit,row.id)).condition,'openBox');
+  for(const condition of ['broken','new']){const data=form();data.set('condition',condition);await assert.rejects(listings.create(tokens.seller,data),/listingInvalid/);}
+  accounts.db.prepare("UPDATE listings SET item_condition='new' WHERE id=?").run(row.id);
+  const legacy=form();legacy.delete('photos');legacy.set('condition','new');assert.equal((await listings.create(tokens.seller,legacy,row.id)).condition,'new');
+  legacy.set('condition','brandNew');assert.equal((await listings.create(tokens.seller,legacy,row.id)).condition,'brandNew');
+});
 test('only owner can relist sold items, preserving photos and conversations through review',async t=>{
   const {accounts,listings,tokens,form}=await setup(t);const messaging=new Messaging(accounts);
   const row=await listings.create(tokens.seller,form());listings.approve(tokens.owner,row.id);
