@@ -1,6 +1,6 @@
 export const conditions=['used','good','likeNew','openBox','brandNew'];
 const rows={
-tr:['Kullanılmış','İyi','Çok iyi','Yeni ama kutusu açılmış','Yeni ve kutusunda (Brand new)','Yeni (kutu bilgisi belirtilmemiş)'],
+tr:['Kullanılmış','İyi','Çok iyi','Yeni ama kutusu açılmış','Yeni ve kutusunda','Yeni (kutu bilgisi belirtilmemiş)'],
 en:['Used','Good','Very good','New, open box','Brand new, in box','New (packaging unspecified)'],
 nl:['Gebruikt','Goed','Zeer goed','Nieuw, doos geopend','Gloednieuw in doos','Nieuw (verpakking niet vermeld)'],
 de:['Gebraucht','Gut','Sehr gut','Neu, Verpackung geöffnet','Fabrikneu und originalverpackt','Neu (Verpackung nicht angegeben)'],
