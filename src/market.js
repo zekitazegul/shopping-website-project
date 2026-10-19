@@ -1,3 +1,4 @@
+import {additionalTitles} from './extra-languages.js';
 export const items = [
 {id:1,kind:'home',icon:'🪑',color:'#e9ddcc',price:45,country:'NL',city:'Utrecht',condition:'good',title:{nl:'Een stoel met karakter',en:'A chair with character',tr:'Karakter sahibi bir sandalye'}},
 {id:2,kind:'fashion',icon:'🧥',color:'#e4e8df',price:38,country:'NL',city:'Amsterdam',condition:'likeNew',title:{nl:'Je nieuwe favoriete jas',en:'Your next favorite jacket',tr:'Yeni favori ceketin'}},
@@ -8,6 +9,7 @@ export const items = [
 {id:7,kind:'leisure',icon:'🎸',color:'#eaded5',price:85,country:'NL',city:'Eindhoven',condition:'good',title:{nl:'Ruimte voor een nieuwe hobby',en:'Make room for a new hobby',tr:'Yeni bir hobiye yer aç'}},
 {id:8,kind:'leisure',icon:'🎒',color:'#e1e6dc',price:32,country:'BE',city:'Gent',condition:'likeNew',title:{nl:'Voor je volgende avontuur',en:'For your next adventure',tr:'Bir sonraki maceran için'}}
 ];
+for(const [locale,titles] of Object.entries(additionalTitles))for(const [index,item] of items.entries())item.title[locale]=titles[index];
 export function selectItems(source,state,locale){
 const q=state.query.trim().toLocaleLowerCase(locale);
 return source.filter(i=>(!q||(i.title[locale]+' '+i.city).toLocaleLowerCase(locale).includes(q))&&(!state.category||i.kind===state.category)&&(!state.country||i.country===state.country)&&(!state.condition||i.condition===state.condition)&&(state.min===''||i.price>=Number(state.min))&&(state.max===''||i.price<=Number(state.max))&&(!state.favoritesOnly||state.favorites.includes(i.id))).sort((a,b)=>state.sort==='low'?a.price-b.price:state.sort==='high'?b.price-a.price:b.id-a.id);

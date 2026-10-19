@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node tools/serve.mjs",
+    "build": "node tools/build.mjs",
     "test": "node --test tests/market.test.mjs"
   }
 }

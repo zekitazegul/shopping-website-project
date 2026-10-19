@@ -1,5 +1,13 @@
 # Shopping Website Project — initial plan
 
+## 2026-10-19 — Güncel kapsam / Current scope / Huidige scope
+
+TR: Kullanıcı, site ve kodun herkese açık olmasını onayladı. Ücretsiz GitHub Pages üzerinde yalnızca demo yayınlanacak. İlk bölgesel kapsam Hollanda, Belçika ve Almanya; hedef uluslararası büyüme. Ek ülkeler ve gerçek ticari işlevler sonraki aşamada belirlenecek. `.com` alan adı ileride değerlendirilecek; satın alma yapılmayacak. Aşağıdaki ilk plan tarihsel kayıttır.
+
+EN: The user approved public site and source access. Only the demo will be published on free GitHub Pages. Initial regional scope: the Netherlands, Belgium and Germany; the goal is international expansion. Additional countries and real commercial functionality will be decided later. A `.com` domain may be considered later; no purchase is authorized. The initial plan below is historical.
+
+NL: De gebruiker heeft openbare toegang tot de website en broncode goedgekeurd. Alleen de demo wordt op gratis GitHub Pages gepubliceerd. Eerste regionale scope: Nederland, België en Duitsland; het doel is internationale uitbreiding. Extra landen en echte commerciële functies worden later bepaald. Een `.com`-domein kan later worden overwogen; er wordt niets gekocht. Het oorspronkelijke plan hieronder is historisch.
+
 ## Türkçe
 Amaç: Hollanda odaklı, özgün ve kullanımı kolay bir ikinci el pazaryeri.
 
