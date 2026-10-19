@@ -1,0 +1,52 @@
+import {createAuth} from './auth.js';
+import {authConfig} from './auth-config.js';
+
+export function setupAuth(t) {
+  const auth=createAuth(authConfig);
+  const $=id=>document.getElementById(id);
+  let user=null, email='', codeSent=false, busy=false, message='', adminIntent=false, stats=null;
+  function render() {
+    $('account-button').textContent=t(user?'authAccount':'authSignIn');
+    $('auth-heading').textContent=t(adminIntent?'authAdminTitle':'authTitle');
+    $('auth-email-form').hidden=!!user || !auth.configured || codeSent;
+    $('auth-code-form').hidden=!!user || !auth.configured || !codeSent;
+    $('auth-session').hidden=!user;
+    $('auth-user-email').textContent=user?.email || '';
+    $('auth-admin-panel').hidden=!user?.admin || !stats;
+    $('auth-total').textContent=String(stats?.accounts ?? '');
+    $('auth-verified').textContent=String(stats?.verified ?? '');
+    $('auth-status').textContent=t(!auth.configured?'authUnavailable':busy?'authBusy':message)||'';
+    for(const button of $('auth-dialog').querySelectorAll('form button'))button.disabled=busy;
+  }
+  async function perform(work) {
+    if(busy)return;busy=true;message='';render();
+    try{await work();}catch(error){message=['authUnavailable','authInvalid','authNetwork','authRateLimit','authAdminDenied'].includes(error.message)?error.message:'authInvalid';}
+    finally{busy=false;render();}
+  }
+  async function open(admin=false) {
+    adminIntent=admin;message='';stats=null;
+    if(!$('auth-dialog').open)$('auth-dialog').showModal();
+    render();
+    if(auth.configured)await perform(async()=>{
+      user=await auth.access();
+      if(adminIntent && user){if(!user.admin)throw new Error('authAdminDenied');stats=await auth.adminStats();}
+    });
+  }
+  $('account-button').onclick=()=>open();
+  $('admin-login').onclick=()=>open(true);
+  $('auth-close').onclick=()=>$('auth-dialog').close();
+  $('auth-email-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
+    email=$('auth-email').value.trim();await auth.sendCode(email);codeSent=true;message='authSent';$('auth-code').value='';
+  });};
+  $('auth-code-form').onsubmit=event=>{event.preventDefault();perform(async()=>{
+    user=await auth.verifyCode(email,$('auth-code').value.trim());
+    if(!user)throw new Error('authInvalid');
+    codeSent=false;$('auth-code').value='';
+    if(adminIntent){if(!user.admin)throw new Error('authAdminDenied');stats=await auth.adminStats();}
+  });};
+  $('auth-change-email').onclick=()=>{if(busy)return;codeSent=false;message='';$('auth-code').value='';render();};
+  $('auth-logout').onclick=()=>perform(async()=>{await auth.signOut();user=null;stats=null;});
+  render();
+  if(auth.configured)perform(async()=>{user=await auth.access();});
+  return {translate:render};
+}

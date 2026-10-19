@@ -7,7 +7,7 @@ await page.waitForSelector('.card');if(await page.locator('.card').count()!==5)t
 await page.selectOption('#country','BE');if(await page.locator('.card').count()!==2)throw Error('BE filter');
 await page.selectOption('#language','tr');if(await page.locator('.card').count()!==2)throw Error('Language changed country');if(await page.locator('html').getAttribute('lang')!=='tr')throw Error('Language');
 await page.check('#nl-only');await page.locator('.favorite').first().click();await page.reload();await page.waitForSelector('.card');if(!(await page.locator('#favorites').textContent()).includes('(1)'))throw Error('Favorite persistence');
-await page.locator('.detail-link').first().click();if(!await page.locator('dialog').isVisible())throw Error('Details');await page.keyboard.press('Escape');
+await page.locator('.detail-link').first().click();if(!await page.locator('#detail').isVisible())throw Error('Details');await page.keyboard.press('Escape');
 await page.fill('#search','utrecht');await page.waitForFunction(()=>document.querySelectorAll('.card').length===1);await page.fill('#search','no-results-123');await page.locator('#empty').waitFor({state:'visible'});
 await page.click('#empty-reset');if(await page.locator('.card').count()!==8)throw Error('Reset');
 if(await page.locator('#feedback-form').evaluate(form=>form.checkValidity()))throw Error('Empty feedback accepted');

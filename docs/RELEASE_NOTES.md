@@ -1,3 +1,11 @@
+# 2026-10-19 — Üyelik hazırlığı / Account preparation / Accountvoorbereiding
+
+TR: Dokuz dilde e-posta koduyla giriş ekranı ve yönetici girişi eklendi. Supabase doğrulaması, özel yönetici rolü ve sunucuda korunan hesap istatistikleri için entegrasyon/migrasyon hazırlandı. Supabase/SMTP ve ilk yönetici kurulumu bekleniyor; canlı üyelik henüz açık değil. Gerçek alım-satım eklenmedi; gelecekte sunucuda doğrulanmış hesap gerektirecek. Mock testleri gerçek e-posta göndermez. Kurulum: `docs/AUTH_SETUP.md`.
+
+EN: Added nine-language email-code and admin sign-in screens. Prepared Supabase integration and a migration for private admin roles and server-protected account statistics. Supabase/SMTP and first-admin setup are pending; live registration is not enabled. Actual trading is not implemented and must require verified accounts on the server when added. Mock tests send no actual email. Setup: `docs/AUTH_SETUP.md`.
+
+NL: Aanmeldschermen met e-mailcode en beheerdersaanmelding zijn toegevoegd in negen talen. Supabase-integratie en een migratie voor privébeheerdersrollen en serverbeveiligde accountstatistieken zijn voorbereid. Supabase/SMTP en de eerste beheerder moeten nog worden ingesteld; registratie is nog niet ingeschakeld. Echte handel is niet geïmplementeerd en moet later geverifieerde accounts op de server vereisen. Mocktests versturen geen echte e-mail. Installatie: `docs/AUTH_SETUP.md`.
+
 # 2026-10-19 — E-posta / Email / E-mail
 
 TR: Geri bildirim formunun GitHub Issues yönlendirmesi kaldırıldı. Form artık ziyaretçinin e-posta uygulamasında geliştiriciye gönderilecek bir taslak hazırlar; ziyaretçi mesajı kendisi gönderir. E-posta uygulaması olmayanlar için adres görünürdür. Mesajlar sitede yayınlanmaz. Dokuz dil güncellendi. Gerçek e-posta gönderimi testlerde yapılmadı.
