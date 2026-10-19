@@ -1,5 +1,11 @@
 # 2026-10-19 — Fotoğraf galerisi / Photo gallery / Fotogalerij
 
+TR: Favoriler kısayolu artık sonuçlara kaydırır ve “Favoriler” başlığını gösterir. Eski arama ve filtreler favorileri gizlemesin diye geçici olarak temizlenir; kısayola tekrar basılınca geri yüklenir. Boş liste için açıklama ve “Tüm ilanları göster” seçeneği eklendi. Favoriler bu tarayıcıda saklanmaya devam eder.
+
+EN: The Favorites shortcut now scrolls to a clearly titled Favorites view. Previous search and filters are temporarily cleared so they do not hide saved listings, and restored when toggling back. Empty favorites include an explanation and “Show all listings”. Favorites remain browser-local.
+
+NL: De favorietenknop schuift nu naar een duidelijk benoemde favorietenweergave. Zoekopdracht en filters worden tijdelijk gewist en bij terugschakelen hersteld. Bij een lege lijst verschijnen uitleg en “Alle advertenties tonen”. Favorieten blijven in deze browser bewaard.
+
 TR: Giriş pencerelerinde eksik/geçersiz e-posta, boş veya hatalı parola ve hatalı/süresi dolmuş kod için belirgin uyarılar gösterilir. Başarılı giriş aynı pencerede “Giriş başarılı” ve hoş geldiniz mesajıyla doğrulanır; ardından ana sayfaya dönülür. Parola ayarları bu geçiş sırasında gösterilmez.
 
 EN: Login dialogs show clear warnings for invalid email, missing or incorrect passwords, and incorrect/expired codes. Successful login first shows a welcome confirmation in the same dialog, then returns to the homepage. Password settings stay hidden during this transition.

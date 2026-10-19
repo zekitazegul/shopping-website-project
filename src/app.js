@@ -1,3 +1,4 @@
+import {favoriteMessages} from './favorite-languages.js';
 import {setupPhotoGallery,photoMessages} from './photo-gallery.js';
 import {conditions,conditionMessages} from './conditions.js';
 import {items,selectItems} from './market.js';
@@ -22,6 +23,7 @@ for(const [lang,translations] of Object.entries(listingMessages))Object.assign(m
 for(const [lang,translations] of Object.entries(messageTranslations))Object.assign(messages[lang],translations);
 for(const [lang,translations] of Object.entries(conditionMessages))Object.assign(messages[lang],translations);
 for(const [lang,translations] of Object.entries(photoMessages))Object.assign(messages[lang],translations);
+for(const [lang,translations] of Object.entries(favoriteMessages))Object.assign(messages[lang],translations);
 let catalog=items;
 let listingUI=null;
 let accountUI=null;
@@ -32,7 +34,7 @@ let locale=read('shopping.language','nl');if(!messages[locale])locale='nl';
 const defaultState={query:'',category:'',country:'NL',condition:'',min:'',max:'',sort:'recent',favoritesOnly:false};
 const state={...defaultState,favorites:read('shopping.favorites',[])};
 if(!Array.isArray(state.favorites))state.favorites=[];
-let opened=null;
+let opened=null,browsingState=null;
 const t=key=>messages[locale][key];
 const photoGallery=setupPhotoGallery(t);
 const money=value=>new Intl.NumberFormat(locale==='en'?'en-NL':locale,{style:'currency',currency:'EUR',maximumFractionDigits:2,minimumFractionDigits:0}).format(value);
@@ -42,7 +44,14 @@ function favoriteButton(item){const b=document.createElement('button');b.classNa
 function art(item){if(item.photoUrls?.length){const frame=document.createElement('div');frame.className='item-art listing-photo';const img=document.createElement('img');img.src=item.photoUrls[0];img.alt=item.title[locale];img.loading='lazy';frame.append(img);return frame;}const el=document.createElement('div');el.className='item-art';el.style.background=item.color;const span=document.createElement('span');span.textContent=item.icon;span.setAttribute('aria-hidden','true');el.append(span);return el;}
 function text(tag,value,className){const el=document.createElement(tag);el.textContent=value;if(className)el.className=className;return el;}
 function renderCategories(){$('categories').setAttribute('aria-label',t('all'));$('categories').replaceChildren(...['all','home','fashion','electronics','bikes','leisure'].map(key=>{const b=document.createElement('button');b.className='category';b.textContent=t(key);b.setAttribute('aria-pressed',String(state.category===(key==='all'?'':key)));b.onclick=()=>{state.category=key==='all'?'':key;render();};return b;}));}
-function render(){syncControls();renderCategories();const result=selectItems(catalog,state,locale);$('count').textContent=result.length+' '+t('results');$('grid').replaceChildren(...result.map(item=>{const card=document.createElement('article');card.className='card';const link=document.createElement('button');link.className='detail-link';link.setAttribute('aria-label',item.title[locale]+', '+money(item.price));link.append(art(item),text('h3',item.title[locale]),text('p',money(item.price),'price'),text('p',item.city+' · '+t(item.country),'location'));link.onclick=()=>showDetails(item);card.append(link,favoriteButton(item),text('span',t(item.condition),'condition-tag'));return card;}));$('empty').hidden=result.length!==0;}
+function render(){
+const heading=document.querySelector('#browse h2');heading.id='browse-heading';heading.tabIndex=-1;heading.textContent=t(state.favoritesOnly?'favorites':listingUI?.live?'listingLiveHeading':'listings');
+document.querySelector('#browse .eyebrow').textContent=t(state.favoritesOnly?'favoritesEyebrow':'discover');
+$('empty').querySelector('h3').textContent=t(state.favoritesOnly?'favoritesEmpty':listingUI?.live?'listingEmpty':'empty');
+$('empty').querySelector('p').textContent=t(state.favoritesOnly?'favoritesEmptyHelp':'emptyHelp');
+$('empty-reset').textContent=t(state.favoritesOnly?'showAllListings':'reset');
+$('reset').textContent=t(state.favoritesOnly?'showAllListings':'reset');
+syncControls();renderCategories();const result=selectItems(catalog,state,locale);$('count').textContent=result.length+' '+t('results');$('grid').replaceChildren(...result.map(item=>{const card=document.createElement('article');card.className='card';const link=document.createElement('button');link.className='detail-link';link.setAttribute('aria-label',item.title[locale]+', '+money(item.price));link.append(art(item),text('h3',item.title[locale]),text('p',money(item.price),'price'),text('p',item.city+' · '+t(item.country),'location'));link.onclick=()=>showDetails(item);card.append(link,favoriteButton(item),text('span',t(item.condition),'condition-tag'));return card;}));$('empty').hidden=result.length!==0;}
 function showDetails(item){opened=item;const content=$('detail-content');content.replaceChildren(item.photoUrls?.length?photoGallery.preview(item):art(item),text('p',t(item.live?'listingApproved':'sample'),'eyebrow'),text('h2',item.title[locale]),text('p',money(item.price),'price'),text('p',item.city+' · '+t(item.country)+' · '+t(item.condition),'location'),text('p',item.live?item.description:t('detailNote')),text('p',t('savedNote'),'filter-help'));const b=favoriteButton(item);b.style.position='static';b.style.width='auto';b.style.borderRadius='8px';b.style.padding='8px 15px';b.textContent=(state.favorites.includes(item.id)?'♥ ':'♡ ')+t('favorites');content.append(b);if(item.live){const contact=text('button',t('messageContact'),'primary contact-seller');contact.id='contact-seller';contact.onclick=()=>{$('detail').close();document.dispatchEvent(new CustomEvent('contactseller',{detail:{listingId:item.id.replace(/^live:/,''),title:item.title[locale]}}));};content.append(contact);}$('detail').setAttribute('aria-label',item.title[locale]);if(!$('detail').open)$('detail').showModal();}
 function translate(){document.documentElement.lang=locale;photoGallery.translate();document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));$('language').value=locale;$('languageLabel').textContent=t('language');$('close-detail').setAttribute('aria-label',t('close'));$('search').placeholder=t('search');options('country',[['','allCountries'],['NL','NL'],['BE','BE'],['DE','DE']],state.country);options('condition',[['','anyCondition'],...conditions.map(value=>[value,value])],state.condition);options('sort',[['recent','recent'],['low','low'],['high','high']],state.sort);render();}
 $('language').onchange=e=>{locale=e.target.value;save('shopping.language',locale);translate();if(opened)showDetails(opened);};
@@ -51,8 +60,12 @@ $('search').oninput=e=>{state.query=e.target.value;render();};
 for(const id of ['country','condition','sort'])$(id).onchange=e=>{state[id]=e.target.value;render();};
 for(const id of ['min','max'])$(id).oninput=e=>{state[id]=e.target.value;render();};
 $('nl-only').onchange=e=>{state.country=e.target.checked?'NL':'';render();};
-$('favorites').onclick=()=>{state.favoritesOnly=!state.favoritesOnly;render();};
-function reset(){Object.assign(state,defaultState,{country:''});render();}
+$('favorites').onclick=()=>{
+  if(state.favoritesOnly){if(browsingState)Object.assign(state,browsingState);state.favoritesOnly=false;browsingState=null;}
+  else{const {favorites,...filters}=state;browsingState=filters;Object.assign(state,defaultState,{country:'',favoritesOnly:true});}
+  render();$('browse-heading').focus({preventScroll:true});$('browse').scrollIntoView({behavior:'instant',block:'start'});
+};
+function reset(){browsingState=null;Object.assign(state,defaultState,{country:''});render();}
 $('reset').onclick=reset;$('empty-reset').onclick=reset;
 $('close-detail').onclick=()=>$('detail').close();$('detail').addEventListener('close',()=>opened=null);$('detail').addEventListener('click',e=>{if(e.target===$('detail')){const r=$('detail').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('detail').close();}});
 const expected=Object.keys(messages.nl).sort().join('|');for(const lang of Object.keys(messages))if(Object.keys(messages[lang]).sort().join('|')!==expected)throw new Error('Missing translations: '+lang);
