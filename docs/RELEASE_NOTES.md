@@ -1,3 +1,11 @@
+# 2026-10-19 — Fotoğraf galerisi / Photo gallery / Fotogalerij
+
+TR: İlan fotoğrafına dokununca büyük görünüm açılır. İleri–geri düğmeleri, klavye okları ve küçük önizlemelerle tüm fotoğraflar incelenebilir. Fotoğraflar kırpılmadan gösterilir. Escape büyük görünümü kapatır ve ilan ayrıntılarına döner. Dokuz dil ve telefon/tablet/masaüstü düzenleri desteklenir.
+
+EN: Listing photos open in a larger viewer, with previous/next buttons, keyboard arrows and thumbnails. Photos are displayed without cropping. Escape closes the viewer and returns to listing details. Supports nine languages and phone/tablet/desktop layouts.
+
+NL: Advertentiefoto’s openen in een grotere weergave met vorige/volgende-knoppen, pijltjestoetsen en miniaturen. Foto’s worden zonder bijsnijden getoond. Escape sluit de weergave en keert terug naar de advertentie. Negen talen en telefoon/tablet/desktop worden ondersteund.
+
 # 2026-10-19 — Mesajlaşma / Messaging / Berichten
 
 TR: Doğrulanmış alıcılar yayınlanan ilan üzerinden satıcıya özel konuşma başlatabilir. Üst menüde gelen kutusu/okunmamış sayacı, cevap verme ve eski mesajları yükleme eklendi. Konuşmayı yalnızca alıcı ve satıcı okuyabilir; yönetici rolü üçüncü taraf erişimi sağlamaz. E-posta adresleri otomatik paylaşılmaz. Kaldırılan ilanların geçmişi okunur, yeni mesaj gönderilemez. Tekrarlanan ağ istekleri aynı mesajı çoğaltmaz. Dokuz dil ve mobil/tablet/masaüstü düzenleri güncellendi. Test mesajları yalnızca geçici test veritabanında oluşturuldu.

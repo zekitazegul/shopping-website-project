@@ -32,7 +32,7 @@ try{
   await seller.fill('#listing-title','Handmade chair <script>');await seller.fill('#listing-description','A well-kept chair ready for a new home.');await seller.fill('#listing-price','42.50');await seller.fill('#listing-city','Antwerpen');await seller.selectOption('#listing-country','BE');
   ensure(await seller.locator('#listing-condition option').count()===5,'Missing condition options');await seller.selectOption('#listing-condition','openBox');
   const image=await sharp({create:{width:100,height:80,channels:3,background:'#335577'}}).png().toBuffer();
-  await seller.locator('#listing-photos').setInputFiles({name:'chair.png',mimeType:'image/png',buffer:image});await seller.locator('#listing-submit').click();
+  await seller.locator('#listing-photos').setInputFiles(Array.from({length:4},(_,index)=>({name:'chair-'+index+'.png',mimeType:'image/png',buffer:image})));await seller.locator('#listing-submit').click();
   await seller.waitForFunction(()=>document.getElementById('listing-message').textContent.includes('submitted'));
   await seller.locator('#listing-editor-close').click();await seller.locator('#listing-mine').click();
   await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Awaiting review'));
@@ -40,7 +40,17 @@ try{
   const admin=await login('owner@example.test');await admin.locator('#listing-moderate').click();await admin.locator('.managed-listing .primary').click();
   await admin.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Published'));await admin.locator('#listing-manager-close').click();
   const visitor=await browser.newPage();await visitor.goto(base);await visitor.selectOption('#country','BE');await visitor.waitForSelector('.card');
-  ensure(await visitor.locator('.card h3').textContent()==='Handmade chair <script>','Title was not rendered literally');await visitor.locator('.detail-link').click();await visitor.locator('#detail').waitFor({state:'visible'});await visitor.keyboard.press('Escape');
+  ensure(await visitor.locator('.card h3').textContent()==='Handmade chair <script>','Title was not rendered literally');await visitor.locator('.detail-link').click();await visitor.locator('#detail').waitFor({state:'visible'});
+  await visitor.locator('.photo-enlarge').click();await visitor.locator('#photo-viewer').waitFor({state:'visible'});await visitor.waitForFunction(()=>document.getElementById('photo-full').naturalWidth>0);
+  ensure(await visitor.locator('#photo-thumbnails button').count()===4,'Gallery missing photos');
+  await visitor.locator('#photo-next').click();ensure(await visitor.locator('#photo-thumbnails button').nth(1).getAttribute('aria-pressed')==='true','Next photo failed');
+  await visitor.keyboard.press('ArrowLeft');await visitor.keyboard.press('ArrowLeft');ensure(await visitor.locator('#photo-thumbnails button').nth(3).getAttribute('aria-pressed')==='true','Keyboard navigation failed');
+  for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
+    await visitor.evaluate(lang=>{const el=document.getElementById('language');el.value=lang;el.dispatchEvent(new Event('change'));},lang);
+    for(const [width,height]of [[320,568],[800,360],[768,1024],[1440,900]]){await visitor.setViewportSize({width,height});ensure(await visitor.locator('#photo-viewer').evaluate(el=>el.scrollWidth<=el.clientWidth+1&&el.getBoundingClientRect().top>=0&&el.getBoundingClientRect().bottom<=innerHeight+1),'Gallery overflow '+lang);}
+  }
+  await visitor.locator('#photo-thumbnails button').nth(1).click();ensure(await visitor.locator('#photo-thumbnails button').nth(1).getAttribute('aria-pressed')==='true','Thumbnail navigation failed');
+  await visitor.keyboard.press('Escape');ensure(await visitor.locator('#photo-viewer').isHidden(),'Gallery did not close');ensure(await visitor.locator('#detail').isVisible(),'Gallery closed listing details');await visitor.keyboard.press('Escape');
   await visitor.selectOption('#language','tr');ensure(await visitor.locator('#country').inputValue()==='BE','Language changed physical country');
   await seller.locator('#listing-manager-close').click();await seller.locator('#listing-mine').click();await seller.getByRole('button',{name:'Edit',exact:true}).click();
   ensure(await seller.locator('#listing-title').inputValue()==='Handmade chair <script>','Edit not prefilled');
