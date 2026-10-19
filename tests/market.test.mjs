@@ -1,4 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {items,selectItems} from '../src/market.js';
+import {buildFeedbackMailto} from '../src/feedback.js';
+test('email draft preserves multilingual content and prevents extra mail headers',()=>{
+const url=new URL(buildFeedbackMailto('developer@example.test','Öneri & soru\r\nBcc: nobody','Mesaj? & # +\nİkinci satır'));
+assert.equal(url.protocol,'mailto:');assert.equal(url.pathname,'developer@example.test');
+assert.equal(url.searchParams.get('subject'),'Öneri & soru Bcc: nobody');
+assert.equal(url.searchParams.get('body'),'Mesaj? & # +\nİkinci satır');assert.equal(url.searchParams.size,2);
+});
 const base={query:'',category:'',country:'',condition:'',min:'',max:'',sort:'recent',favoritesOnly:false,favorites:[]};
 test('country selects physical location in every interface locale',()=>{for(const locale of ['tr','en','nl','de','fr','it','es','pl','pt']){const result=selectItems(items,{...base,country:'NL'},locale);assert.equal(result.length,5);assert.ok(result.every(i=>i.country==='NL'));}});
 test('filters compose with price, category, condition and favorites',()=>{const result=selectItems(items,{...base,country:'NL',category:'fashion',condition:'new',min:'40',max:'60',favoritesOnly:true,favorites:[6]},'en');assert.deepEqual(result.map(i=>i.id),[6]);});
