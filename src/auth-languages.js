@@ -35,3 +35,5 @@ for(const [lang,values] of Object.entries(passwordRows)){
 }
 const signInTitles={tr:'Hesabına giriş yap',en:'Sign in to your account',nl:'Inloggen op je account',de:'Bei deinem Konto anmelden',fr:'Connexion à votre compte',it:'Accedi al tuo account',es:'Accede a tu cuenta',pl:'Zaloguj się na konto',pt:'Entre na sua conta'};
 for(const [lang,title] of Object.entries(signInTitles))authMessages[lang].authTitle=title;
+const visibilityLabels={tr:['Parolayı göster','Parolayı gizle'],en:['Show password','Hide password'],nl:['Wachtwoord tonen','Wachtwoord verbergen'],de:['Passwort anzeigen','Passwort verbergen'],fr:['Afficher le mot de passe','Masquer le mot de passe'],it:['Mostra password','Nascondi password'],es:['Mostrar contraseña','Ocultar contraseña'],pl:['Pokaż hasło','Ukryj hasło'],pt:['Mostrar palavra-passe','Ocultar palavra-passe']};
+for(const [lang,[show,hide]] of Object.entries(visibilityLabels))Object.assign(authMessages[lang],{authShowPassword:show,authHidePassword:hide});

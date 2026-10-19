@@ -9,19 +9,26 @@ const base='http://127.0.0.1:4193',server=createApp({accounts,mailReady:true,roo
 await new Promise(resolve=>server.listen(4193,'127.0.0.1',resolve));
 const browser=await type.launch({headless:true,...(process.env.PLAYWRIGHT_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_EXECUTABLE}:{})});
 const ensure=(value,message)=>{if(!value)throw Error(message);};
+async function checkVisibility(page,id){
+  const input=page.locator('#'+id),button=page.locator(`.password-toggle[aria-controls="${id}"]`);
+  await input.fill('visibility test 123');await button.click();ensure(await input.getAttribute('type')==='text','Password not shown: '+id);ensure(await button.getAttribute('aria-pressed')==='true','Missing visible state');ensure((await button.getAttribute('aria-label')).startsWith('Hide password'),'Missing accessible hide label');
+  await button.click();ensure(await input.getAttribute('type')==='password','Password not hidden: '+id);ensure(await input.inputValue()==='visibility test 123','Toggle changed password');await input.fill('');
+}
 try{
   const context=await browser.newContext(),page=await context.newPage(),errors=[];context.on('page',page=>page.on('pageerror',e=>errors.push(e.message)));page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);await page.selectOption('#language','en');await page.locator('#account-button').click();
   ensure(!await page.locator('#auth-remember').isChecked(),'Remember must be opt-in');
+  await checkVisibility(page,'auth-login-password');ensure(mail.length===0,'Eye button submitted login form');
   await page.fill('#auth-email','member@example.test');await page.locator('#auth-email-form button[type=submit]').click();await page.locator('#auth-code-form').waitFor({state:'visible'});
   await page.fill('#auth-code',mail[0].code);await page.locator('#auth-code-form button[type=submit]').click();await page.locator('#auth-password-form').waitFor({state:'visible'});
+  for(const id of ['auth-current-password','auth-new-password','auth-confirm-password'])await checkVisibility(page,id);
   for(const lang of ['tr','en','nl','de','fr','it','es','pl','pt']){
     await page.evaluate(lang=>{const el=document.getElementById('language');el.value=lang;el.dispatchEvent(new Event('change'));},lang);
     for(const [width,height]of [[320,568],[800,360],[768,1024],[1440,900]]){await page.setViewportSize({width,height});ensure(await page.locator('#auth-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Password form overflow '+lang);}
   }
   await page.evaluate(()=>{const el=document.getElementById('language');el.value='en';el.dispatchEvent(new Event('change'));});
-  await page.fill('#auth-new-password','example test password 123');await page.fill('#auth-confirm-password','example test password 999');await page.locator('#auth-password-form button').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('must match'));
-  await page.fill('#auth-confirm-password','example test password 123');await page.locator('#auth-password-form button').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('saved'));
+  await page.fill('#auth-new-password','example test password 123');await page.fill('#auth-confirm-password','example test password 999');await page.locator('#auth-password-form button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('must match'));
+  await page.fill('#auth-confirm-password','example test password 123');await page.locator('#auth-password-form button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('saved'));
   await page.locator('#auth-logout').click();await page.locator('#auth-email-form').waitFor({state:'visible'});
   await page.fill('#auth-email','member@example.test');await page.fill('#auth-login-password','wrong password');await page.locator('#auth-password-login').click();await page.waitForFunction(()=>document.getElementById('auth-status').textContent.includes('Incorrect'));
   await page.locator('#auth-remember').check();await page.fill('#auth-login-password','example test password 123');await page.locator('#auth-login-password').press('Enter');await page.locator('#auth-session').waitFor({state:'visible'});
