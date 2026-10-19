@@ -13,24 +13,26 @@ export class Listings {
       CREATE TABLE IF NOT EXISTS listing_photos(id TEXT PRIMARY KEY,listing_id TEXT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,position INTEGER NOT NULL,data BLOB NOT NULL);
       CREATE INDEX IF NOT EXISTS listings_status_time ON listings(status,created_at);
       CREATE INDEX IF NOT EXISTS listings_owner ON listings(owner_id);`);
+    if(!this.db.prepare('PRAGMA table_info(listings)').all().some(column=>column.name==='sold_at'))this.db.exec('ALTER TABLE listings ADD COLUMN sold_at INTEGER');
   }
   rows(where='',params=[]){
-    return this.db.prepare(`SELECT id,title,description,price_cents,kind,country,city,item_condition,status,created_at FROM listings ${where} ORDER BY created_at DESC,id DESC LIMIT 100`).all(...params).map(row=>({
-      id:row.id,title:row.title,description:row.description,price:row.price_cents/100,kind:row.kind,country:row.country,city:row.city,condition:row.item_condition,status:row.status,createdAt:row.created_at,
+    return this.db.prepare(`SELECT id,title,description,price_cents,kind,country,city,item_condition,status,sold_at,created_at FROM listings ${where} ORDER BY created_at DESC,id DESC LIMIT 100`).all(...params).map(row=>({
+      id:row.id,title:row.title,description:row.description,price:row.price_cents/100,kind:row.kind,country:row.country,city:row.city,condition:row.item_condition,status:row.sold_at!==null&&row.status!=='removed'?'sold':row.status,createdAt:row.created_at,
       photos:this.db.prepare('SELECT id FROM listing_photos WHERE listing_id=? ORDER BY position').all(row.id).map(photo=>photo.id)
     }));
   }
-  publicList(){return this.rows("WHERE status='approved'");}
+  publicList(){return this.rows("WHERE status='approved' AND sold_at IS NULL");}
   mine(token){const user=this.accounts.requireVerified(token);return this.rows('WHERE owner_id=?',[user.id]);}
   review(token){if(!this.accounts.requireVerified(token).admin)throw new AuthError(403,'authAdminDenied');return this.rows();}
-  async create(token,form){
+  async create(token,form,id=null){
     const user=this.accounts.requireVerified(token);
+    if(id)this.editable(user,id);
     const field=(key,min,max)=>{const value=form.get(key);if(typeof value!=='string'||value.trim().length<min||value.trim().length>max)throw new AuthError(400,'listingInvalid');return value.trim();};
     const title=field('title',3,120),description=field('description',20,3000),city=field('city',2,100);
     const price=field('price',1,12),kind=field('kind',1,30),country=field('country',2,2),condition=field('condition',1,20);
     if(!/^\d{1,6}(\.\d{1,2})?$/.test(price)||Number(price)<=0||!kinds.includes(kind)||!['NL','BE','DE'].includes(country)||!['new','likeNew','good'].includes(condition))throw new AuthError(400,'listingInvalid');
-    const files=form.getAll('photos');if(files.length<1||files.length>4)throw new AuthError(400,'listingPhotoError');
-    this.accounts.limit('create-listing',user.id,20,86400000);
+    const files=form.getAll('photos');if((!id&&files.length<1)||files.length>4)throw new AuthError(400,'listingPhotoError');
+    this.accounts.limit(id?'edit-listing':'create-listing',user.id,20,86400000);
     const photos=[];
     for(const file of files){
       if(!(file instanceof File)||!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>3*1024*1024||file.size===0)throw new AuthError(400,'listingPhotoError');
@@ -46,13 +48,25 @@ export class Listings {
         photos.push(await image.rotate().resize(1600,1600,{fit:'inside',withoutEnlargement:true}).flatten({background:'#fff'}).jpeg({quality:82}).toBuffer());
       }catch{throw new AuthError(400,'listingPhotoError');}
     }
-    const id=randomUUID();this.db.exec('BEGIN IMMEDIATE');
+    const editing=Boolean(id);id=id||randomUUID();this.db.exec('BEGIN IMMEDIATE');
     try{
-      this.db.prepare('INSERT INTO listings(id,owner_id,title,description,price_cents,kind,country,city,item_condition,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)').run(id,user.id,title,description,Math.round(Number(price)*100),kind,country,city,condition,this.accounts.now());
+      if(editing){this.editable(user,id);this.db.prepare("UPDATE listings SET title=?,description=?,price_cents=?,kind=?,country=?,city=?,item_condition=?,status='pending' WHERE id=?").run(title,description,Math.round(Number(price)*100),kind,country,city,condition,id);if(photos.length)this.db.prepare('DELETE FROM listing_photos WHERE listing_id=?').run(id);}
+      else this.db.prepare('INSERT INTO listings(id,owner_id,title,description,price_cents,kind,country,city,item_condition,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)').run(id,user.id,title,description,Math.round(Number(price)*100),kind,country,city,condition,this.accounts.now());
       const insert=this.db.prepare('INSERT INTO listing_photos(id,listing_id,position,data) VALUES(?,?,?,?)');
       photos.forEach((data,index)=>insert.run(randomUUID(),id,index,data));this.db.exec('COMMIT');
     }catch(error){this.db.exec('ROLLBACK');throw error;}
     return this.rows('WHERE id=?',[id])[0];
+  }
+  editable(user,id){
+    const listing=this.db.prepare('SELECT owner_id,status,sold_at FROM listings WHERE id=?').get(id);
+    if(!listing||listing.owner_id!==user.id||listing.status==='removed'||listing.sold_at!==null)throw new AuthError(409,'listingActionFailed');
+    return listing;
+  }
+  sold(token,id){
+    const user=this.accounts.requireVerified(token);this.editable(user,id);
+    const result=this.db.prepare("UPDATE listings SET sold_at=? WHERE id=? AND status='approved' AND sold_at IS NULL").run(this.accounts.now(),id);
+    if(!result.changes)throw new AuthError(409,'listingActionFailed');
+    return {ok:true};
   }
   approve(token,id){
     if(!this.accounts.requireVerified(token).admin)throw new AuthError(403,'authAdminDenied');

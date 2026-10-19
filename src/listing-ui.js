@@ -5,7 +5,7 @@ export function setupListingUI(t,account,onCatalog){
   const $=id=>document.getElementById(id),api=account.auth;
   const live=authConfig.url==='/api';
   const marketUrl=authConfig.url.startsWith('https:')?authConfig.url.slice(0,-4)+'/':'';
-  let busy=false,message='',mode='mine',managerRows=[],objectUrls=[],version=0,catalogRevision=0;
+  let editingId=null,busy=false,message='',mode='mine',managerRows=[],objectUrls=[],version=0,catalogRevision=0;
   const make=(tag,value,css)=>{const el=document.createElement(tag);if(value)el.textContent=value;if(css)el.className=css;return el;};
   function options(id,values){const selected=$(id).value;$(id).replaceChildren(...values.map(([value,key])=>{const option=make('option',t(key));option.value=value;return option;}));if(values.some(([value])=>value===selected))$(id).value=selected;}
   function translate(){
@@ -17,6 +17,10 @@ export function setupListingUI(t,account,onCatalog){
     options('listing-kind',[['home','home'],['fashion','fashion'],['electronics','electronics'],['bikes','bikes'],['leisure','leisure']]);
     options('listing-country',[['NL','NL'],['BE','BE'],['DE','DE']]);
     options('listing-condition',[['good','good'],['likeNew','likeNew'],['new','new']]);
+    $('listing-editor-title').textContent=t(editingId?'listingEdit':'listingCreate');
+    $('listing-edit-help').hidden=!editingId;
+    $('listing-photo-help').textContent=t(editingId?'listingEditPhotos':'listingPhotoHelp');
+    $('listing-photos').required=!editingId;
     $('listing-message').textContent=message?t(message):'';
     $('listing-manager-title').textContent=t(mode==='admin'?'listingReviewTitle':'listingMine');
     if($('listing-manager').open)drawManager();
@@ -30,7 +34,12 @@ export function setupListingUI(t,account,onCatalog){
   async function signedIn(){if(await api.access())return true;await account.open();return false;}
   async function openCreate(){
     if(!live || !await signedIn())return;
-    message='';translate();$('listing-editor').showModal();
+    editingId=null;$('listing-form').reset();message='';translate();$('listing-editor').showModal();
+  }
+  function openEdit(row){
+    if(busy)return;editingId=row.id;message='';$('listing-form').reset();
+    for(const key of ['title','description','price','kind','country','city','condition'])$('listing-form').elements.namedItem(key).value=row[key];
+    translate();$('listing-editor').showModal();
   }
   function revoke(){version++;objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];}
   function drawManager(){
@@ -44,6 +53,8 @@ export function setupListingUI(t,account,onCatalog){
       row.photos.forEach((id,index)=>{const image=make('img');image.alt=row.title+' '+(index+1);images.append(image);api.photo(id).then(blob=>{if(current!==version)return;const url=URL.createObjectURL(blob);objectUrls.push(url);image.src=url;}).catch(()=>image.remove());});
       card.append(images);const actions=make('div',null,'listing-row-actions');
       if(mode==='admin'&&row.status==='pending'){const approve=make('button',t('listingApprove'),'primary');approve.onclick=()=>action('/admin/listings/'+row.id+'/approve');actions.append(approve);}
+      if(mode==='mine'&&['pending','approved'].includes(row.status)){const edit=make('button',t('listingEdit'),'primary');edit.onclick=()=>openEdit(row);actions.append(edit);}
+      if(mode==='mine'&&row.status==='approved'){const sold=make('button',t('listingMarkSold'),'text-button');sold.onclick=()=>{if(window.confirm(t('listingConfirmSold')))action('/listings/'+row.id+'/sold');};actions.append(sold);}
       if(row.status!=='removed'){const remove=make('button',t('listingRemove'),'text-button');remove.onclick=()=>{if(window.confirm(t('listingConfirmRemove')))action('/listings/'+row.id+'/remove');};actions.append(remove);}
       card.append(actions);$('listing-manager-rows').append(card);
     }
@@ -72,9 +83,10 @@ export function setupListingUI(t,account,onCatalog){
     event.preventDefault();if(busy)return;busy=true;message='listingWorking';translate();$('listing-submit').disabled=true;
     try{
       const form=new FormData($('listing-form'));form.delete('photos');const photos=$('listing-photos').files;
-      if(photos.length<1||photos.length>4)throw Error('listingPhotoError');
+      if((!editingId&&photos.length<1)||photos.length>4)throw Error('listingPhotoError');
       for(const [index,file] of [...photos].entries())form.append('photos',await compress(file),'photo-'+index+'.jpg');
-      await api.api('/listings',form);message='listingSubmitted';$('listing-form').reset();
+      await api.api(editingId?'/listings/'+editingId+'/edit':'/listings',form);message='listingSubmitted';$('listing-form').reset();
+      if(editingId){$('listing-editor').close();editingId=null;await loadManager();$('listing-manager-status').textContent=t('listingSubmitted');}await refresh();
     }catch(error){message=['listingInvalid','listingPhotoError','listingActionFailed','authRateLimit'].includes(error.message)?error.message:'listingActionFailed';}
     finally{busy=false;$('listing-submit').disabled=false;translate();}
   };

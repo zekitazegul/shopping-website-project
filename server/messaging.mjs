@@ -15,7 +15,7 @@ export class Messaging {
   }
   participant(token,id){
     const user=this.accounts.requireVerified(token);
-    const thread=this.db.prepare('SELECT c.*,l.title,l.status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.id=? AND (c.buyer_id=? OR c.seller_id=?)').get(id,user.id,user.id);
+    const thread=this.db.prepare("SELECT c.*,l.title,CASE WHEN l.sold_at IS NOT NULL AND l.status!='removed' THEN 'sold' ELSE l.status END status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.id=? AND (c.buyer_id=? OR c.seller_id=?)").get(id,user.id,user.id);
     if(!thread)throw new AuthError(403,'messageAccess');
     return {user,thread};
   }
@@ -26,7 +26,7 @@ export class Messaging {
   }
   inbox(token){
     const user=this.accounts.requireVerified(token);
-    return this.db.prepare('SELECT c.*,l.title,l.status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.buyer_id=? OR c.seller_id=? ORDER BY c.updated_at DESC,c.id LIMIT 100').all(user.id,user.id).map(row=>this.summary(row,user));
+    return this.db.prepare("SELECT c.*,l.title,CASE WHEN l.sold_at IS NOT NULL AND l.status!='removed' THEN 'sold' ELSE l.status END status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.buyer_id=? OR c.seller_id=? ORDER BY c.updated_at DESC,c.id LIMIT 100").all(user.id,user.id).map(row=>this.summary(row,user));
   }
   validate(body){
     if(!body || typeof body.text!=='string' || body.text.trim().length<1 || body.text.trim().length>2000 || body.text.includes('\0') || !uuid(body.clientId))throw new AuthError(400,'messageInvalid');
@@ -46,10 +46,10 @@ export class Messaging {
   start(token,body){
     const user=this.accounts.requireVerified(token);this.validate(body);
     if(!uuid(body.listingId))throw new AuthError(400,'messageInvalid');
-    const listing=this.db.prepare("SELECT id,owner_id,status FROM listings WHERE id=? AND status='approved'").get(body.listingId);
+    const listing=this.db.prepare("SELECT id,owner_id,status FROM listings WHERE id=? AND status='approved' AND sold_at IS NULL").get(body.listingId);
     if(!listing)throw new AuthError(409,'messageClosed');
     if(listing.owner_id===user.id)throw new AuthError(409,'messageOwnListing');
-    let thread=this.db.prepare('SELECT c.*,l.status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.listing_id=? AND c.buyer_id=?').get(listing.id,user.id);
+    let thread=this.db.prepare("SELECT c.*,CASE WHEN l.sold_at IS NOT NULL AND l.status!='removed' THEN 'sold' ELSE l.status END status FROM conversations c JOIN listings l ON l.id=c.listing_id WHERE c.listing_id=? AND c.buyer_id=?").get(listing.id,user.id);
     this.db.exec('BEGIN IMMEDIATE');
     try{
       if(!thread){

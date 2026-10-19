@@ -44,14 +44,17 @@ export function createApp({accounts,mailReady,root,origins=[],allowHosts=['127.0
         if(path==='/api/listings' && req.method==='GET')return json(200,listings.publicList());
         if(path==='/api/my/listings' && req.method==='GET')return json(200,listings.mine(token));
         if(path==='/api/admin/listings' && req.method==='GET')return json(200,listings.review(token));
-        if(path==='/api/listings' && req.method==='POST'){
+        const edit=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/edit$/);
+        const sold=path.match(/^\/api\/listings\/([a-f0-9-]{36})\/sold$/);
+        if(sold&&req.method==='POST')return json(200,listings.sold(token,sold[1]));
+        if((path==='/api/listings'||edit) && req.method==='POST'){
           accounts.requireVerified(token);
           const type=req.headers['content-type']||'';
           if(!type.startsWith('multipart/form-data;'))throw new AuthError(415,'listingInvalid');
           let size=0;const chunks=[];
           for await(const chunk of req){size+=chunk.length;if(size>13*1024*1024)throw new AuthError(413,'listingPhotoError');chunks.push(chunk);}
           let form;try{form=await new Response(Buffer.concat(chunks),{headers:{'Content-Type':type}}).formData();}catch{throw new AuthError(400,'listingInvalid');}
-          return json(201,await listings.create(token,form));
+          return json(edit?200:201,await listings.create(token,form,edit?.[1]));
         }
         const approve=path.match(/^\/api\/admin\/listings\/([a-f0-9-]{36})\/approve$/);
         if(approve && req.method==='POST')return json(200,listings.approve(token,approve[1]));

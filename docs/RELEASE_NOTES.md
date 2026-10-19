@@ -80,3 +80,9 @@ First local prototype: three languages, item-location country filter, search, ca
 
 ## Nederlands
 Eerste lokale prototype: drie talen, landfilter op artikellocatie, zoeken, categorieën, prijs, staat, sorteren, advertentiedetails en lokaal opgeslagen favorieten. Alle advertenties zijn voorbeeldgegevens met illustraties. Kopen, verkopen, betalingen en berichten zijn nog niet beschikbaar.
+
+## Listing updates / Advertenties bijwerken / İlan güncellemeleri
+
+- TR: Kullanıcı kendi ilanını düzenleyebilir; değişiklikler yeniden onaya gider. Fotoğraflar korunabilir veya tümü değiştirilebilir. Satıldı olarak işaretlenen ilan katalogdan kalkar; mesaj geçmişi okunabilir, yeni mesaj gönderilemez.
+- EN: Owners can edit their listings and resubmit them for approval, retaining photos or replacing all photos. Sold listings leave the catalogue; conversation history remains readable and new messages are disabled.
+- NL: Eigenaren kunnen advertenties bewerken en opnieuw ter goedkeuring aanbieden, met behoud of vervanging van alle foto's. Verkochte advertenties verdwijnen uit het aanbod; bestaande berichten blijven leesbaar en nieuwe berichten zijn uitgeschakeld.

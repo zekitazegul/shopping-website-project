@@ -73,3 +73,46 @@ test('online database backup restores listing metadata, photos and ownership',as
     assert.deepEqual(Buffer.from(copy.photo(row.photos[0])),Buffer.from(listings.photo(row.photos[0])));
   }finally{restored?.close();if(!resolve(directory).startsWith(prefix))throw Error('Unexpected test path');rmSync(directory,{recursive:true,force:true});}
 });
+
+test('only owners edit; edits require review, retain or replace photos atomically',async t=>{
+  const {listings,tokens,form}=await setup(t);const original=await listings.create(tokens.seller,form());listings.approve(tokens.owner,original.id);
+  const update=form({title:'An updated chair',country:'DE',price:'25.99'});update.delete('photos');
+  await assert.rejects(listings.create(tokens.other,update,original.id),/listingActionFailed/);
+  await assert.rejects(listings.create(tokens.owner,update,original.id),/listingActionFailed/);
+  const edited=await listings.create(tokens.seller,update,original.id);
+  assert.equal(edited.id,original.id);assert.equal(edited.status,'pending');assert.equal(edited.country,'DE');assert.equal(edited.price,25.99);assert.deepEqual(edited.photos,original.photos);assert.equal(listings.publicList().length,0);
+  assert.throws(()=>listings.photo(original.photos[0]),/authInvalid/);
+  listings.approve(tokens.owner,original.id);
+  await assert.rejects(listings.create(tokens.seller,form({photo:Buffer.from('invalid')}),original.id),/listingPhotoError/);
+  assert.equal(listings.publicList()[0].title,'An updated chair');assert.ok(listings.photo(original.photos[0]).length);
+  const replaced=await listings.create(tokens.seller,form(),original.id);assert.notEqual(replaced.photos[0],original.photos[0]);assert.throws(()=>listings.photo(original.photos[0],tokens.seller),/listingActionFailed/);
+});
+test('sold items leave catalogue and cannot be edited, republished or marked by others',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);const {Messaging}=await import('../server/messaging.mjs');const messaging=new Messaging(accounts);
+  const row=await listings.create(tokens.seller,form());assert.throws(()=>listings.sold(tokens.seller,row.id),/listingActionFailed/);listings.approve(tokens.owner,row.id);
+  const {randomUUID}=await import('node:crypto');const body={text:'Is this available?',clientId:randomUUID(),listingId:row.id};const thread=messaging.start(tokens.other,body);
+  assert.throws(()=>listings.sold(tokens.other,row.id),/listingActionFailed/);assert.throws(()=>listings.sold(tokens.owner,row.id),/listingActionFailed/);
+  listings.sold(tokens.seller,row.id);assert.equal(listings.publicList().length,0);assert.equal(listings.mine(tokens.seller)[0].status,'sold');
+  assert.equal(messaging.read(tokens.other,thread.id).conversation.status,'sold');assert.equal(messaging.inbox(tokens.seller)[0].status,'sold');
+  assert.throws(()=>messaging.send(tokens.other,thread.id,{text:'Another message',clientId:randomUUID()}),/messageClosed/);assert.throws(()=>messaging.start(tokens.other,{...body,clientId:randomUUID()}),/messageClosed/);
+  await assert.rejects(listings.create(tokens.seller,form(),row.id),/listingActionFailed/);assert.throws(()=>listings.approve(tokens.owner,row.id),/listingActionFailed/);
+  new Listings(accounts);assert.equal(listings.mine(tokens.seller)[0].status,'sold');listings.remove(tokens.seller,row.id);assert.equal(listings.mine(tokens.seller)[0].status,'removed');
+});
+test('HTTP edit and sold actions enforce ownership and moderation',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);const row=await listings.create(tokens.seller,form());listings.approve(tokens.owner,row.id);
+  const server=createApp({accounts,mailReady:true,root:resolve(import.meta.dirname,'..')});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const base='http://127.0.0.1:'+server.address().port+'/api/listings/'+row.id;
+  assert.equal((await fetch(base+'/edit',{method:'POST',body:form()})).status,401);
+  assert.equal((await fetch(base+'/edit',{method:'POST',headers:{Authorization:'Bearer '+tokens.other},body:form()})).status,409);
+  const edit=form();edit.delete('photos');assert.equal((await fetch(base+'/edit',{method:'POST',headers:{Authorization:'Bearer '+tokens.seller},body:edit})).status,200);
+  assert.equal(listings.mine(tokens.seller)[0].status,'pending');listings.approve(tokens.owner,row.id);
+  assert.equal((await fetch(base+'/sold',{method:'POST',headers:{Authorization:'Bearer '+tokens.other}})).status,409);
+  assert.equal((await fetch(base+'/sold',{method:'POST',headers:{Authorization:'Bearer '+tokens.seller}})).status,200);assert.equal(listings.publicList().length,0);
+});
+
+test('existing database gains sold column without losing approved listings or photos',async t=>{
+  const {accounts,listings,tokens,form}=await setup(t);const row=await listings.create(tokens.seller,form());listings.approve(tokens.owner,row.id);
+  accounts.db.exec('ALTER TABLE listings DROP COLUMN sold_at');const migrated=new Listings(accounts);
+  assert.equal(migrated.publicList()[0].id,row.id);assert.equal(migrated.mine(tokens.seller)[0].status,'approved');assert.ok(migrated.photo(row.photos[0]).length);
+  migrated.sold(tokens.seller,row.id);assert.equal(migrated.mine(tokens.seller)[0].status,'sold');
+});

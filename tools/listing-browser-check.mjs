@@ -41,7 +41,15 @@ try{
   const visitor=await browser.newPage();await visitor.goto(base);await visitor.selectOption('#country','BE');await visitor.waitForSelector('.card');
   ensure(await visitor.locator('.card h3').textContent()==='Handmade chair <script>','Title was not rendered literally');await visitor.locator('.detail-link').click();await visitor.locator('#detail').waitFor({state:'visible'});await visitor.keyboard.press('Escape');
   await visitor.selectOption('#language','tr');ensure(await visitor.locator('#country').inputValue()==='BE','Language changed physical country');
+  await seller.locator('#listing-manager-close').click();await seller.locator('#listing-mine').click();await seller.getByRole('button',{name:'Edit',exact:true}).click();
+  ensure(await seller.locator('#listing-title').inputValue()==='Handmade chair <script>','Edit not prefilled');
+  await seller.fill('#listing-title','Updated chair');await seller.locator('#listing-submit').click();
+  await seller.waitForFunction(()=>!document.getElementById('listing-editor').open);await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Awaiting review'));
+  await seller.waitForFunction(()=>document.querySelector('.managed-listing img')?.naturalWidth>0);
+  await admin.locator('#listing-moderate').click();await admin.getByRole('button',{name:'Approve',exact:true}).click();await admin.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Published'));await admin.locator('#listing-manager-close').click();
+  await seller.locator('#listing-manager-close').click();await seller.locator('#listing-mine').click();await seller.getByRole('button',{name:'Mark as sold',exact:true}).click();await seller.waitForFunction(()=>document.querySelector('.managed-listing')?.textContent.includes('Sold'));
+  ensure(await seller.getByRole('button',{name:'Edit',exact:true}).count()===0,'Sold listing editable');
   await admin.locator('#listing-moderate').click();await admin.locator('.managed-listing .text-button').click();await admin.waitForFunction(()=>document.querySelectorAll('.managed-listing button').length===0);
   await visitor.reload();await visitor.waitForFunction(()=>document.querySelectorAll('.card').length===0);ensure(!errors.length,errors.join('\n'));
-  console.log('PASS '+engine+': real SQLite/HTTP create, photo, pending review, admin approval/removal, public browsing, 36 localized form viewports. No real email sent.');
+  console.log('PASS '+engine+': real SQLite/HTTP create, photo, pending review, admin approval, owner edit/review with retained photo, sold, removal, public browsing, 36 localized form viewports. No real email sent.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));accounts.close();}
